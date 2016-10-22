@@ -1,0 +1,181 @@
+server:
+  type: default
+  maxThreads: 1024 
+  applicationConnectors:
+    - type: http
+      idleTimeout: 5 seconds
+
+esConfiguration:
+  nodeClient: false
+  servers: [localhost]
+  clusterName: jay-local
+  settings:
+    node.data: false
+
+clientSecretResourceConfiguration:
+  installed:
+    client_id: 995109261603-bcbs0dmt8r0bnddstoqbm06bphl2d5bf.apps.googleusercontent.com
+    project_id: sweattaylorga
+    auth_uri: https://accounts.google.com/o/oauth2/auth
+    token_uri: https://accounts.google.com/o/oauth2/token
+    auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+    client_secret: _Jex5mZTYDIiuMN9eNO52PHL
+    redirect_uris:
+    - urn:ietf:wg:oauth:2.0:oob
+    - http://localhost
+    
+ingestorConfiguration:
+  historicStartDate: 5YearsAgo
+  historicEndDate: today
+  samplingLevel: LARGE
+  reports:
+  - name: userReport
+    writeToIndex: analytics
+    writeToType: userStats
+    prefix: user_
+    dimensions:
+    - ga:dateHour
+    - ga:userType
+    - ga:userDefinedValue
+    - ga:daysSinceLastSession
+    - ga:sessionCount
+    metrics:
+    - ga:sessionsPerUser
+    - ga:users
+    - ga:newUsers
+    - ga:percentNewSessions
+  - name: sessionReport
+    writeToIndex: analytics
+    writeToType: sessionStats
+    prefix: session_
+    dimensions:
+    - ga:sessionDurationBucket
+    - ga:dateHour
+    metrics:
+    - ga:sessions
+    - ga:bounces
+    - ga:bounceRate
+    - ga:sessionDuration
+    - ga:avgSessionDuration
+    - ga:hits
+  - name: eventReport
+    writeToIndex: analytics
+    writeToType: eventStats
+    prefix: event_
+    dimensions:
+    - ga:dateHour
+    - ga:eventCategory
+    - ga:eventAction
+    - ga:eventLabel
+    metrics:
+    - ga:totalEvents
+    - ga:uniqueEvents
+    - ga:eventValue
+    - ga:avgEventValue
+    - ga:sessionsWithEvent
+    - ga:eventsPerSessionWithEvent
+  - name: platformReport
+    writeToIndex: analytics
+    writeToType: platformStats
+    prefix: platform_
+    dimensions:
+    - ga:dateHour
+    - ga:browser
+    - ga:browserVersion
+    - ga:operatingSystem
+    - ga:operatingSystemVersion
+    - ga:deviceCategory
+    metrics:
+    - ga:sessions
+  - name: ecommerceTransactionReport
+    writeToIndex: analytics
+    writeToType: ecommerceTransactionStats
+    prefix: ecommerceTransaction_
+    dimensions:
+    - ga:dateHour
+    - ga:transactionId
+    - ga:daysToTransaction
+    metrics:
+    - ga:transactionRevenue
+    - ga:transactionShipping
+    - ga:transactionTax
+  - name: ecommerceProductReport
+    writeToIndex: analytics
+    writeToType: ecommerceProductStats
+    prefix: ecommerceProduct_
+    dimensions:
+    - ga:dateHour
+    - ga:transactionId
+    - ga:productName
+    - ga:productSku
+    - ga:productCategory
+    metrics:
+    - ga:itemQuantity
+    - ga:revenuePerItem
+    - ga:itemRevenue
+    - ga:productRefundAmount
+  - name: ecommercePromotionReport
+    writeToIndex: analytics
+    writeToType: ecommercePromotionStats
+    prefix: ecommercePromotion_
+    dimensions:
+    - ga:dateHour
+    - ga:transactionId
+    - ga:internalPromotionCreative
+    - ga:internalPromotionId
+    - ga:internalPromotionName
+    - ga:internalPromotionPosition
+    metrics:
+    - ga:internalPromotionCTR
+    - ga:internalPromotionClicks
+    - ga:internalPromotionViews
+  - name: trafficSourceReport
+    writeToIndex: analytics
+    writeToType: trafficSourceStats
+    prefix: trafficSource_
+    dimensions:
+    - ga:dateHour
+    - ga:fullReferrer
+    - ga:campaign
+    - ga:sourceMedium
+    - ga:keyword
+    - ga:socialNetwork
+    - ga:channelGrouping
+    metrics:
+    - ga:organicSearches
+    - ga:percentNewSessions
+    - ga:sessions
+    - ga:newUsers
+    - ga:bounceRate
+    - ga:pageviewsPerSession
+    - ga:avgSessionDuration
+    - ga:transactions
+    - ga:transactionRevenue
+  
+swagger:
+  resourcePackage: <a comma separated string of the packages that contain your @Api annotated resources>
+  
+logging:
+  level: DEBUG
+  loggers:
+    com.lsid: DEBUG
+    org.eclipse.jetty: INFO
+    org.elasticsearch.plugins: INFO
+    org.dozer: INFO
+    org.apache.commons: INFO
+  appenders:
+    - type: file
+      # The file to which current statements will be logged.
+      currentLogFilename: ./logs/analyticsapi.log
+
+      # When the log file rotates, the archived log will be renamed to this and gzipped. The
+      # %d is replaced with the previous day (yyyy-MM-dd). Custom rolling windows can be created
+      # by passing a SimpleDateFormat-compatible format as an argument: "%d{yyyy-MM-dd-hh}".
+      archivedLogFilenamePattern: ./logs/analyticsapi-%d.log.gz
+
+      # The number of archived files to keep.
+      archivedFileCount: 5
+
+      # The timezone used to format dates. HINT: USE THE DEFAULT, UTC.
+      timeZone: America/Los_Angeles
+  
