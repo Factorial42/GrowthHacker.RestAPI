@@ -91,10 +91,14 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Instantiates a new google analytics resource.
 	 *
-	 * @param client the client
-	 * @param configuration the configuration
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 * @throws GeneralSecurityException the general security exception
+	 * @param client
+	 *            the client
+	 * @param configuration
+	 *            the configuration
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
+	 * @throws GeneralSecurityException
+	 *             the general security exception
 	 */
 	public GoogleAnalyticsResource(Client client,
 			GoogleAnalyticsConfiguration configuration) throws IOException,
@@ -120,7 +124,8 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Ingest historic data.
 	 *
-	 * @param brand the brand
+	 * @param brand
+	 *            the brand
 	 * @return the response
 	 */
 	@POST
@@ -131,7 +136,7 @@ public class GoogleAnalyticsResource {
 			return Response.status(Response.Status.BAD_REQUEST)
 					.entity(BRAND_ID_REQUIRED).build();
 		credential.setAccessToken(brand.getAccountOauthtoken());
-//		credential.setRefreshToken(brand.getAccountRefreshOauthtoken());
+		// credential.setRefreshToken(brand.getAccountRefreshOauthtoken());
 		AnalyticsReporting analyticsReportingService = new AnalyticsReporting.Builder(
 				httpTransport, JSON_FACTORY, credential).setApplicationName(
 				APPLICATION_NAME).build();
@@ -140,9 +145,9 @@ public class GoogleAnalyticsResource {
 					brand.getAccountId(), brand.getViews(), null, null);
 			return Response.status(Response.Status.OK).entity(success).build();
 		} catch (IOException e) {
-			logger.error("Error in getting Data from Google Analytics", e);
+			logger.error("Error in getting Data from Google Analytics:", e);
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-					.entity("Error in getting Data from Google Analytics")
+					.entity("Error in getting Data from Google Analytics:" + e.getMessage())
 					.build();
 		}
 	}
@@ -150,9 +155,12 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Ingest data.
 	 *
-	 * @param brand the brand
-	 * @param startDate the start date
-	 * @param endDate the end date
+	 * @param brand
+	 *            the brand
+	 * @param startDate
+	 *            the start date
+	 * @param endDate
+	 *            the end date
 	 * @return the response
 	 */
 	@POST
@@ -174,9 +182,9 @@ public class GoogleAnalyticsResource {
 					brand.getAccountId(), brand.getViews(), startDate, endDate);
 			return Response.status(Response.Status.OK).entity(success).build();
 		} catch (IOException e) {
-			logger.error("Error in getting Data from Google Analytics", e);
+			logger.error("Error in getting Data from Google Analytics:", e);
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-					.entity("Error in getting Data from Google Analytics")
+					.entity("Error in getting Data from Google Analytics:" + e.getMessage())
 					.build();
 		}
 	}
@@ -184,13 +192,19 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Gets the and persist reports.
 	 *
-	 * @param analyticsReportingService the analytics reporting service
-	 * @param accountId the account id
-	 * @param views the views
-	 * @param startDate the start date
-	 * @param endDate the end date
+	 * @param analyticsReportingService
+	 *            the analytics reporting service
+	 * @param accountId
+	 *            the account id
+	 * @param views
+	 *            the views
+	 * @param startDate
+	 *            the start date
+	 * @param endDate
+	 *            the end date
 	 * @return the and persist reports
-	 * @throws IOException Signals that an I/O exception has occurred.
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
 	 */
 	private boolean getAndPersistReports(
 			AnalyticsReporting analyticsReportingService, String accountId,
@@ -207,14 +221,15 @@ public class GoogleAnalyticsResource {
 						.getHistoricEndDate() : endDate);
 
 		for (View view : views) {
-			List<Dimension> dimensions = new ArrayList<>();
-			List<Metric> metrics = new ArrayList<>();
 			ReportRequest request = new ReportRequest().setDateRanges(
 					Arrays.asList(dateRange)).setSamplingLevel(
 					ingestorConfiguration.getSamplingLevel());
 
 			// for each view, get all reports configured
 			for (Report report : ingestorConfiguration.getReports()) {
+				List<Dimension> dimensions = new ArrayList<>();
+				List<Metric> metrics = new ArrayList<>();
+				results = new ArrayList<>();
 				for (String dimensionName : report.getDimensions()) {
 					dimensions.add(new Dimension().setName(dimensionName));
 				}
@@ -258,23 +273,28 @@ public class GoogleAnalyticsResource {
 								.getNextPageToken();
 					}
 				}
-				// persist reports
-				for (JsonObject result : results) {
-					// prefix each element and trim "ga:" with the respective
-					// stat's prefix
-					JsonObject prefixedObject = new JsonObject();
-					for (Entry<String, JsonElement> element : result.entrySet()) {
-						prefixedObject.add(report.getPrefix()
-								+ element.getKey().replaceAll("ga:", ""),
-								element.getValue());
-					}
-					// index on ES
-					esClient.prepareIndex(report.getWriteToIndex(), report
-							.getWriteToType(),
-							prefixedObject.get(report.getPrefix() + "dateHour")
-									.getAsString());
-				}
+				boolean success = persistReports(results, report);
 			}
+		}
+		return true;
+	}
+
+	private boolean persistReports(List<JsonObject> results, Report report) {
+		// persist reports
+		for (JsonObject result : results) {
+			// prefix each element and trim "ga:" with the respective
+			// stat's prefix
+			JsonObject prefixedObject = new JsonObject();
+			for (Entry<String, JsonElement> element : result.entrySet()) {
+				prefixedObject.add(report.getPrefix()
+						+ element.getKey().replaceAll("ga:", ""),
+						element.getValue());
+			}
+			// index on ES
+			esClient.prepareIndex(report.getWriteToIndex(), report
+					.getWriteToType(),
+					prefixedObject.get(report.getPrefix() + "dateHour")
+							.getAsString());
 		}
 		return true;
 	}
@@ -282,7 +302,8 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Prints the response.
 	 *
-	 * @param response the response
+	 * @param response
+	 *            the response
 	 * @return the list
 	 */
 	private static List<JsonObject> printResponse(GetReportsResponse response) {
@@ -327,5 +348,9 @@ public class GoogleAnalyticsResource {
 			}
 		}
 		return results;
+	}
+	
+	public static void main(String[] args) {
+		
 	}
 }
