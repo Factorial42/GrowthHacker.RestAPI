@@ -31,7 +31,7 @@ ingestorConfiguration:
   samplingLevel: LARGE
   reports:
   - name: userReport
-    writeToIndex: analytics
+    writeToIndex: analytics.new
     writeToType: userStats
     prefix: user_
     dimensions:
@@ -46,7 +46,7 @@ ingestorConfiguration:
     - ga:newUsers
     - ga:percentNewSessions
   - name: sessionReport
-    writeToIndex: analytics
+    writeToIndex: analytics.new
     writeToType: sessionStats
     prefix: session_
     dimensions:
@@ -60,7 +60,7 @@ ingestorConfiguration:
     - ga:avgSessionDuration
     - ga:hits
   - name: eventReport
-    writeToIndex: analytics
+    writeToIndex: analytics.new
     writeToType: eventStats
     prefix: event_
     dimensions:
@@ -76,7 +76,7 @@ ingestorConfiguration:
     - ga:sessionsWithEvent
     - ga:eventsPerSessionWithEvent
   - name: platformReport
-    writeToIndex: analytics
+    writeToIndex: analytics.new
     writeToType: platformStats
     prefix: platform_
     dimensions:
@@ -89,7 +89,7 @@ ingestorConfiguration:
     metrics:
     - ga:sessions
   - name: ecommerceTransactionReport
-    writeToIndex: analytics
+    writeToIndex: analytics.new
     writeToType: ecommerceTransactionStats
     prefix: ecommerceTransaction_
     dimensions:
@@ -101,7 +101,7 @@ ingestorConfiguration:
     - ga:transactionShipping
     - ga:transactionTax
   - name: ecommerceProductReport
-    writeToIndex: analytics
+    writeToIndex: analytics.new
     writeToType: ecommerceProductStats
     prefix: ecommerceProduct_
     dimensions:
@@ -116,7 +116,7 @@ ingestorConfiguration:
     - ga:itemRevenue
     - ga:productRefundAmount
   - name: ecommercePromotionReport
-    writeToIndex: analytics
+    writeToIndex: analytics.new
     writeToType: ecommercePromotionStats
     prefix: ecommercePromotion_
     dimensions:
@@ -131,7 +131,7 @@ ingestorConfiguration:
     - ga:internalPromotionClicks
     - ga:internalPromotionViews
   - name: trafficSourceReport
-    writeToIndex: analytics
+    writeToIndex: analytics.new
     writeToType: trafficSourceStats
     prefix: trafficSource_
     dimensions:
@@ -152,6 +152,30 @@ ingestorConfiguration:
     - ga:avgSessionDuration
     - ga:transactions
     - ga:transactionRevenue
+  - name: adwordsReport
+    writeToIndex: analytics.new
+    writeToType: adwordsStats
+    prefix: adwords_
+    dimensions:
+    - ga:dateHour
+    - ga:adGroup
+    - ga:adwordsCustomerID
+    - ga:adwordsCampaignID
+    - ga:adwordsAdGroupID
+    - ga:adwordsCreativeID
+    - ga:adwordsCriteriaID
+    metrics:
+    - ga:impressions
+    - ga:adClicks
+    - ga:adCost
+    - ga:CPM
+    - ga:CPC
+    - ga:CTR
+    - ga:costPerTransaction
+    - ga:costPerGoalConversion
+    - ga:costPerConversion
+    - ga:RPC
+    - ga:ROAS
   
 swagger:
   resourcePackage: <a comma separated string of the packages that contain your @Api annotated resources>
