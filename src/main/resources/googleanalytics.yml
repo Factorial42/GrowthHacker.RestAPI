@@ -8,24 +8,25 @@ server:
 esConfiguration:
   nodeClient: false
   servers: [localhost]
-  clusterName: jay-local
+  clusterName: elasticsearch
   settings:
     node.data: false
 
 clientSecretResourceConfiguration:
   installed:
-    client_id: 995109261603-bcbs0dmt8r0bnddstoqbm06bphl2d5bf.apps.googleusercontent.com
-    project_id: sweattaylorga
+    client_id: 686502966146-42artrbsiu82metst7r9n317p2bueq1n.apps.googleusercontent.com
+    project_id: growthhacker-145721
     auth_uri: https://accounts.google.com/o/oauth2/auth
     token_uri: https://accounts.google.com/o/oauth2/token
     auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
-    client_secret: _Jex5mZTYDIiuMN9eNO52PHL
+    client_secret: GNUm2ai-CwlE4drmx8UoW0mI
     redirect_uris:
     - urn:ietf:wg:oauth:2.0:oob
     - http://localhost
+
     
 ingestorConfiguration:
-  historicStartDate: 5YearsAgo
+  historicStartDate: 1DaysAgo
   historicEndDate: today
   samplingLevel: LARGE
   reports:
@@ -166,7 +167,7 @@ logging:
   appenders:
     - type: file
       # The file to which current statements will be logged.
-      currentLogFilename: ./logs/analyticsapi.log
+      currentLogFilename: ./logs/growthhacker.log
 
       # When the log file rotates, the archived log will be renamed to this and gzipped. The
       # %d is replaced with the previous day (yyyy-MM-dd). Custom rolling windows can be created

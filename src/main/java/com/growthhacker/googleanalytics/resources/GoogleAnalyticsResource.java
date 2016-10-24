@@ -4,10 +4,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -17,6 +21,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.elasticsearch.action.WriteConsistencyLevel;
 import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,14 +116,18 @@ public class GoogleAnalyticsResource {
 
 		this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
-		GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
-				JSON_FACTORY, new InputStreamReader(new ByteArrayInputStream(
-						this.clientSecretResourceConfiguration.toJsonString()
-								.getBytes())));
+		// GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
+		// JSON_FACTORY, new InputStreamReader(new ByteArrayInputStream(
+		// this.clientSecretResourceConfiguration.toJsonString()
+		// .getBytes())));
 
 		this.credential = new GoogleCredential.Builder()
-				.setTransport(httpTransport).setJsonFactory(JSON_FACTORY)
-				.build();
+				.setClientSecrets(
+						this.clientSecretResourceConfiguration.getInstalled()
+								.getClientId(),
+						this.clientSecretResourceConfiguration.getInstalled()
+								.getClientSecret()).setTransport(httpTransport)
+				.setJsonFactory(JSON_FACTORY).build();
 	}
 
 	/**
@@ -130,62 +139,29 @@ public class GoogleAnalyticsResource {
 	 */
 	@POST
 	@Timed
-	@Path("/ingestHistoricData")
-	public Response ingestHistoricData(Brand brand) {
-		if (brand.getId() == null && brand.getId().isEmpty())
-			return Response.status(Response.Status.BAD_REQUEST)
-					.entity(BRAND_ID_REQUIRED).build();
-		credential.setAccessToken(brand.getAccountOauthtoken());
-		// credential.setRefreshToken(brand.getAccountRefreshOauthtoken());
-		AnalyticsReporting analyticsReportingService = new AnalyticsReporting.Builder(
-				httpTransport, JSON_FACTORY, credential).setApplicationName(
-				APPLICATION_NAME).build();
-		try {
-			boolean success = getAndPersistReports(analyticsReportingService,
-					brand.getAccountId(), brand.getViews(), null, null);
-			return Response.status(Response.Status.OK).entity(success).build();
-		} catch (IOException e) {
-			logger.error("Error in getting Data from Google Analytics:", e);
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-					.entity("Error in getting Data from Google Analytics:" + e.getMessage())
-					.build();
-		}
-	}
-
-	/**
-	 * Ingest data.
-	 *
-	 * @param brand
-	 *            the brand
-	 * @param startDate
-	 *            the start date
-	 * @param endDate
-	 *            the end date
-	 * @return the response
-	 */
-	@POST
-	@Timed
 	@Path("/ingestData")
 	public Response ingestData(Brand brand,
 			@QueryParam("startDate") String startDate,
 			@QueryParam("endDate") String endDate) {
-		if (brand.getId() == null && brand.getId().isEmpty())
+		if (brand.getAccountNativeId() == null
+				&& brand.getAccountNativeId().isEmpty())
 			return Response.status(Response.Status.BAD_REQUEST)
 					.entity(BRAND_ID_REQUIRED).build();
-		credential.setAccessToken(brand.getAccountOauthtoken());
-		credential.setRefreshToken(brand.getAccountRefreshOauthtoken());
+		this.credential.setAccessToken(brand.getAccountOauthtoken());
+		this.credential.setRefreshToken(brand.getAccountRefreshOauthtoken());
 		AnalyticsReporting analyticsReportingService = new AnalyticsReporting.Builder(
-				httpTransport, JSON_FACTORY, credential).setApplicationName(
-				APPLICATION_NAME).build();
+				httpTransport, JSON_FACTORY, this.credential)
+				.setApplicationName(APPLICATION_NAME).build();
 		try {
 			boolean success = getAndPersistReports(analyticsReportingService,
-					brand.getAccountId(), brand.getViews(), startDate, endDate);
+					brand, startDate, endDate);
 			return Response.status(Response.Status.OK).entity(success).build();
 		} catch (IOException e) {
 			logger.error("Error in getting Data from Google Analytics:", e);
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-					.entity("Error in getting Data from Google Analytics:" + e.getMessage())
-					.build();
+			return Response
+					.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error in getting Data from Google Analytics:"
+							+ e.getMessage()).build();
 		}
 	}
 
@@ -207,9 +183,8 @@ public class GoogleAnalyticsResource {
 	 *             Signals that an I/O exception has occurred.
 	 */
 	private boolean getAndPersistReports(
-			AnalyticsReporting analyticsReportingService, String accountId,
-			List<View> views, String startDate, String endDate)
-			throws IOException {
+			AnalyticsReporting analyticsReportingService, Brand brand,
+			String startDate, String endDate) throws IOException {
 		List<JsonObject> results = new ArrayList<>();
 		List<JsonObject> tempResults = null;
 		DateRange dateRange = new DateRange();
@@ -220,7 +195,7 @@ public class GoogleAnalyticsResource {
 				.setEndDate((endDate == null || endDate.isEmpty()) ? ingestorConfiguration
 						.getHistoricEndDate() : endDate);
 
-		for (View view : views) {
+		for (View view : brand.getViews()) {
 			ReportRequest request = new ReportRequest().setDateRanges(
 					Arrays.asList(dateRange)).setSamplingLevel(
 					ingestorConfiguration.getSamplingLevel());
@@ -242,7 +217,7 @@ public class GoogleAnalyticsResource {
 				// set 'em once before looping viewids
 				request.setDimensions(dimensions);
 				request.setMetrics(metrics);
-				request.setViewId(view.getId());
+				request.setViewId(view.getViewId());
 
 				ArrayList<ReportRequest> requests = new ArrayList<ReportRequest>();
 				requests.add(request);
@@ -290,11 +265,32 @@ public class GoogleAnalyticsResource {
 						+ element.getKey().replaceAll("ga:", ""),
 						element.getValue());
 			}
+			// add timestamp2015042212
+			DateFormat readFormat = new SimpleDateFormat("yyyyMMddhh");
+			try {
+				prefixedObject.addProperty(
+						"@timestamp",
+						readFormat.parse(
+								prefixedObject.get(
+										report.getPrefix() + "dateHour")
+										.getAsString()).getTime());
+			} catch (ParseException e) {
+				logger.error("Could not parse dateHour:"
+						+ prefixedObject.getAsString());
+			}
 			// index on ES
-			esClient.prepareIndex(report.getWriteToIndex(), report
-					.getWriteToType(),
-					prefixedObject.get(report.getPrefix() + "dateHour")
-							.getAsString());
+			try {
+				esClient.prepareIndex(
+						report.getWriteToIndex(),
+						report.getWriteToType(),
+						prefixedObject.get(report.getPrefix() + "dateHour")
+								.getAsString())
+						.setSource(prefixedObject.toString()).execute().get();
+			} catch (InterruptedException | ExecutionException e) {
+				logger.error(
+						"Could not persist stat:"
+								+ prefixedObject.getAsString(), e);
+			}
 		}
 		return true;
 	}
@@ -349,8 +345,8 @@ public class GoogleAnalyticsResource {
 		}
 		return results;
 	}
-	
+
 	public static void main(String[] args) {
-		
+
 	}
 }

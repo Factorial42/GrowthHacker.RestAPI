@@ -4,11 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class View {
 
 	@JsonProperty("view_id")
@@ -25,6 +27,8 @@ public class View {
 	private String viewChannelType;
 	@JsonProperty("view_ecommerce_tracking")
 	private Boolean viewEcommerceTracking;
+	@JsonProperty("view_enhanced_ecommerce_tracking")
+	private Boolean viewEnhancedEcommerceTracking;
 	@JsonProperty("_id")
 	private String id;
 	/**
@@ -110,6 +114,19 @@ public class View {
 	 */
 	public void setViewEcommerceTracking(Boolean viewEcommerceTracking) {
 		this.viewEcommerceTracking = viewEcommerceTracking;
+	}	
+	/**
+	 * @return the viewEnhancedEcommerceTracking
+	 */
+	public Boolean getViewEnhancedEcommerceTracking() {
+		return viewEnhancedEcommerceTracking;
+	}
+	/**
+	 * @param viewEnhancedEcommerceTracking the viewEnhancedEcommerceTracking to set
+	 */
+	public void setViewEnhancedEcommerceTracking(
+			Boolean viewEnhancedEcommerceTracking) {
+		this.viewEnhancedEcommerceTracking = viewEnhancedEcommerceTracking;
 	}
 	/**
 	 * @return the id
