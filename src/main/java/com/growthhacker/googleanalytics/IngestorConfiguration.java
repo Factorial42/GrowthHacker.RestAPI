@@ -21,6 +21,10 @@ public class IngestorConfiguration {
 	@NotEmpty
 	private String samplingLevel;
 
+	@JsonProperty("views")
+	@NotEmpty
+	private List<String> views = Collections.emptyList();
+
 	@JsonProperty("reports")
 	@NotEmpty
 	private List<Report> reports = Collections.emptyList();
@@ -68,6 +72,20 @@ public class IngestorConfiguration {
 	 */
 	public void setSamplingLevel(String samplingLevel) {
 		this.samplingLevel = samplingLevel;
+	}
+
+	/**
+	 * @return the views
+	 */
+	public List<String> getViews() {
+		return views;
+	}
+
+	/**
+	 * @param views the views to set
+	 */
+	public void setViews(List<String> views) {
+		this.views = views;
 	}
 
 	/**

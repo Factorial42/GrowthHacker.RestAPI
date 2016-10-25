@@ -1,12 +1,11 @@
 package com.growthhacker.googleanalytics.resources;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -21,12 +20,13 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.elasticsearch.action.WriteConsistencyLevel;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -44,12 +44,15 @@ import com.google.api.services.analyticsreporting.v4.model.Metric;
 import com.google.api.services.analyticsreporting.v4.model.MetricHeaderEntry;
 import com.google.api.services.analyticsreporting.v4.model.ReportRequest;
 import com.google.api.services.analyticsreporting.v4.model.ReportRow;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.growthhacker.googleanalytics.GoogleAnalyticsConfiguration;
 import com.growthhacker.googleanalytics.IngestorConfiguration;
 import com.growthhacker.googleanalytics.Report;
 import com.growthhacker.googleanalytics.util.Brand;
+import com.growthhacker.googleanalytics.util.Brand.BrandIngestRunUpdateView;
 import com.growthhacker.googleanalytics.util.View;
 
 // TODO: Auto-generated Javadoc
@@ -70,6 +73,18 @@ public class GoogleAnalyticsResource {
 
 	/** The application name. */
 	private static String APPLICATION_NAME = "GrowthHacker Analytics Resource";
+
+	/** The status success. */
+	private static String STATUS_SUCCESS = "success";
+
+	/** The status failure. */
+	private static String STATUS_FAILURE = "failure";
+
+	/** The brand index. */
+	private static String BRAND_INDEX = "brands";
+
+	/** The brand type. */
+	private static String BRAND_TYPE = "brand";
 
 	/** The Constant JSON_FACTORY. */
 	private static final JsonFactory JSON_FACTORY = GsonFactory
@@ -92,6 +107,8 @@ public class GoogleAnalyticsResource {
 
 	/** The credential. */
 	private GoogleCredential credential;
+	
+	private ObjectMapper mapper;
 
 	/**
 	 * Instantiates a new google analytics resource.
@@ -108,6 +125,7 @@ public class GoogleAnalyticsResource {
 	public GoogleAnalyticsResource(Client client,
 			GoogleAnalyticsConfiguration configuration) throws IOException,
 			GeneralSecurityException {
+		this.mapper = new ObjectMapper();
 		this.esClient = client;
 
 		this.clientSecretResourceConfiguration = configuration
@@ -131,10 +149,14 @@ public class GoogleAnalyticsResource {
 	}
 
 	/**
-	 * Ingest historic data.
+	 * Ingest data.
 	 *
 	 * @param brand
 	 *            the brand
+	 * @param startDate
+	 *            the start date
+	 * @param endDate
+	 *            the end date
 	 * @return the response
 	 */
 	@POST
@@ -147,17 +169,64 @@ public class GoogleAnalyticsResource {
 				&& brand.getAccountNativeId().isEmpty())
 			return Response.status(Response.Status.BAD_REQUEST)
 					.entity(BRAND_ID_REQUIRED).build();
+		BrandIngestRunUpdateView brandIngestRunUpdateView = brand.new BrandIngestRunUpdateView();
+		brandIngestRunUpdateView.setAccountId(brand.getAccountId());
+		brandIngestRunUpdateView.setAccountOauthtoken(brand
+				.getAccountOauthtoken());
+		brandIngestRunUpdateView.setAccountRefreshOauthtoken(brand
+				.getAccountRefreshOauthtoken());
+
 		this.credential.setAccessToken(brand.getAccountOauthtoken());
 		this.credential.setRefreshToken(brand.getAccountRefreshOauthtoken());
 		AnalyticsReporting analyticsReportingService = new AnalyticsReporting.Builder(
 				httpTransport, JSON_FACTORY, this.credential)
 				.setApplicationName(APPLICATION_NAME).build();
 		try {
-			boolean success = getAndPersistReports(analyticsReportingService,
-					brand, startDate, endDate);
-			return Response.status(Response.Status.OK).entity(success).build();
+			brandIngestRunUpdateView
+					.setAccountRecordLastrefreshStartTimestamp(Instant.now()
+							.toEpochMilli());
+			Integer numberOfRowsCreated = getAndPersistReports(
+					analyticsReportingService, brand, startDate, endDate);
+			brandIngestRunUpdateView
+					.setAccountRecordLastrefreshEndTimestamp(Instant.now()
+							.toEpochMilli());
+			brandIngestRunUpdateView.setUpdatedAt(String.valueOf(Instant.now()
+					.toEpochMilli()));
+			brandIngestRunUpdateView.setTimestamp(String.valueOf(Instant.now()
+					.toEpochMilli()));
+			brandIngestRunUpdateView
+					.setAccountRecordLastrefresh(numberOfRowsCreated);
+
+			brandIngestRunUpdateView.setAccountRecordStatus(STATUS_SUCCESS);
+			// update oauth token
+			if (!brandIngestRunUpdateView.getAccountOauthtoken().equals(
+					this.credential.getAccessToken())) {
+				brandIngestRunUpdateView.setAccountOauthtoken(this.credential
+						.getAccessToken());
+			}
+			if (!brandIngestRunUpdateView.getAccountRefreshOauthtoken().equals(
+					this.credential.getRefreshToken())) {
+				brandIngestRunUpdateView
+						.setAccountRefreshOauthtoken(this.credential
+								.getRefreshToken());
+			}
+
+			// update Brand record in ES
+			try {
+				UpdateResponse updateResponse = esClient
+						.prepareUpdate(BRAND_INDEX, BRAND_TYPE, brand.getId())
+						.setDoc(this.mapper.writeValueAsString(brandIngestRunUpdateView)).execute()
+						.get();
+			} catch (InterruptedException | ExecutionException e) {
+				logger.error("Could not update BrandId:{} for Ingest status:",
+						brand.getId(), e);
+			}
+
+			return Response.status(Response.Status.OK)
+					.entity(brandIngestRunUpdateView).build();
 		} catch (IOException e) {
 			logger.error("Error in getting Data from Google Analytics:", e);
+			brandIngestRunUpdateView.setAccountRecordStatus(STATUS_FAILURE);
 			return Response
 					.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("Error in getting Data from Google Analytics:"
@@ -170,10 +239,8 @@ public class GoogleAnalyticsResource {
 	 *
 	 * @param analyticsReportingService
 	 *            the analytics reporting service
-	 * @param accountId
-	 *            the account id
-	 * @param views
-	 *            the views
+	 * @param brand
+	 *            the brand
 	 * @param startDate
 	 *            the start date
 	 * @param endDate
@@ -182,9 +249,10 @@ public class GoogleAnalyticsResource {
 	 * @throws IOException
 	 *             Signals that an I/O exception has occurred.
 	 */
-	private boolean getAndPersistReports(
+	private Integer getAndPersistReports(
 			AnalyticsReporting analyticsReportingService, Brand brand,
 			String startDate, String endDate) throws IOException {
+		int numberOfRowsCreated = 0;
 		List<JsonObject> results = new ArrayList<>();
 		List<JsonObject> tempResults = null;
 		DateRange dateRange = new DateRange();
@@ -194,8 +262,12 @@ public class GoogleAnalyticsResource {
 		dateRange
 				.setEndDate((endDate == null || endDate.isEmpty()) ? ingestorConfiguration
 						.getHistoricEndDate() : endDate);
+		List<String> views = ingestorConfiguration.getViews();
 
 		for (View view : brand.getViews()) {
+			if (!views.contains(view.getViewName())) {
+				continue;
+			}
 			ReportRequest request = new ReportRequest().setDateRanges(
 					Arrays.asList(dateRange)).setSamplingLevel(
 					ingestorConfiguration.getSamplingLevel());
@@ -231,6 +303,10 @@ public class GoogleAnalyticsResource {
 						.reports().batchGet(getReport).execute();
 
 				if ((tempResults = printResponse(response)) != null) {
+					if (report.getEnrichGeo() != null
+							&& report.getEnrichGeo().getEnable()) {
+						enrichGeoData(tempResults, report);
+					}
 					results.addAll(tempResults);
 
 					String nextPageToken = response.getReports().get(0)
@@ -249,11 +325,23 @@ public class GoogleAnalyticsResource {
 					}
 				}
 				boolean success = persistReports(results, report);
+				if (success) {
+					numberOfRowsCreated += results.size();
+				}
 			}
 		}
-		return true;
+		return numberOfRowsCreated;
 	}
 
+	/**
+	 * Persist reports.
+	 *
+	 * @param results
+	 *            the results
+	 * @param report
+	 *            the report
+	 * @return true, if successful
+	 */
 	private boolean persistReports(List<JsonObject> results, Report report) {
 		// persist reports
 		for (JsonObject result : results) {
@@ -323,19 +411,14 @@ public class GoogleAnalyticsResource {
 				List<DateRangeValues> metrics = row.getMetrics();
 				for (int i = 0; i < dimensionHeaders.size()
 						&& i < dimensions.size(); i++) {
-					// System.out.println(dimensionHeaders.get(i) + ": "
-					// + dimensions.get(i));
 					resultNode.addProperty(dimensionHeaders.get(i),
 							dimensions.get(i));
 				}
 
 				for (int j = 0; j < metrics.size(); j++) {
-					// System.out.print("Date Range (" + j + "): ");
 					DateRangeValues values = metrics.get(j);
 					for (int k = 0; k < values.getValues().size()
 							&& k < metricHeaders.size(); k++) {
-						// System.out.println(metricHeaders.get(k).getName()
-						// + ": " + values.getValues().get(k));
 						resultNode.addProperty(metricHeaders.get(k).getName(),
 								values.getValues().get(k));
 					}
@@ -346,6 +429,41 @@ public class GoogleAnalyticsResource {
 		return results;
 	}
 
+	/**
+	 * Enrich geo data.
+	 *
+	 * @param tempResults the temp results
+	 * @param report the report
+	 */
+	private static void enrichGeoData(List<JsonObject> tempResults,
+			Report report) {
+		JsonElement latElement = null, lonElement = null;
+		for (JsonObject resultNode : tempResults) {
+			latElement = resultNode.get("ga:latitude");
+			lonElement = resultNode.get("ga:longitude");
+			if(report.getEnrichGeo().getType().equalsIgnoreCase("Point")) {
+				JsonObject geoPointWrapper = new JsonObject();
+				geoPointWrapper.add("lon", lonElement);
+				geoPointWrapper.add("lat", latElement);
+				resultNode.add("location_point", geoPointWrapper);
+	
+				JsonArray geoPointArray = new JsonArray();
+				geoPointArray.add(lonElement);
+				geoPointArray.add(latElement);
+				JsonObject geoShapeWrapper = new JsonObject();
+				geoShapeWrapper.addProperty("type", "Point");
+				geoShapeWrapper.add("coordinates", geoPointArray);
+				resultNode.add("location", geoShapeWrapper);
+			}
+		}
+	}
+
+	/**
+	 * The main method.
+	 *
+	 * @param args
+	 *            the arguments
+	 */
 	public static void main(String[] args) {
 
 	}

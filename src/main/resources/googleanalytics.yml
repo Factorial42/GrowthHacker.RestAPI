@@ -29,6 +29,9 @@ ingestorConfiguration:
   historicStartDate: 1DaysAgo
   historicEndDate: today
   samplingLevel: LARGE
+  views:
+  - All Web Site Data
+  - All Mobile App Data
   reports:
   - name: userReport
     writeToIndex: analytics.new
@@ -152,6 +155,22 @@ ingestorConfiguration:
     - ga:avgSessionDuration
     - ga:transactions
     - ga:transactionRevenue
+  - name: geoReport
+    writeToIndex: analytics.new
+    writeToType: geoStats
+    prefix: geo_
+    enrichGeo: 
+      enable: true
+      type: point
+    dimensions:
+    - ga:dateHour
+    - ga:city
+    - ga:country
+    - ga:latitude
+    - ga:longitude
+    - ga:region
+    metrics:
+    - ga:sessions
   - name: adwordsReport
     writeToIndex: analytics.new
     writeToType: adwordsStats
@@ -172,7 +191,6 @@ ingestorConfiguration:
     - ga:CPC
     - ga:CTR
     - ga:costPerTransaction
-    - ga:costPerGoalConversion
     - ga:costPerConversion
     - ga:RPC
     - ga:ROAS

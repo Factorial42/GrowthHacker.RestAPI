@@ -27,6 +27,10 @@ public class Report {
 	@NotEmpty
 	private String prefix;
 
+	@JsonProperty("enrichGeo")
+	@NotEmpty
+	private EnrichGeo enrichGeo;
+	
 	@JsonProperty("dimensions")
 	@NotEmpty
 	private List<String> dimensions = Collections.emptyList();
@@ -63,6 +67,20 @@ public class Report {
 	 */
 	public void setPrefix(String prefix) {
 		this.prefix = prefix;
+	}
+
+	/**
+	 * @return the enrichGeo
+	 */
+	public EnrichGeo getEnrichGeo() {
+		return enrichGeo;
+	}
+
+	/**
+	 * @param enrichGeo the enrichGeo to set
+	 */
+	public void setEnrichGeo(EnrichGeo enrichGeo) {
+		this.enrichGeo = enrichGeo;
 	}
 
 	/**
