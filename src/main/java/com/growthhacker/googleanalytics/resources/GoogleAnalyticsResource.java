@@ -69,7 +69,7 @@ public class GoogleAnalyticsResource {
 			.getLogger(GoogleAnalyticsResource.class);
 
 	/** The Constant BRAND_ID_REQUIRED. */
-	public final static String BRAND_ID_REQUIRED = "Brand Id is a required field for this API call";
+	public final static String ACCOUNT_ID_REQUIRED = "account_id is a required field for this API call";
 
 	/** The application name. */
 	private static String APPLICATION_NAME = "GrowthHacker Analytics Resource";
@@ -165,10 +165,10 @@ public class GoogleAnalyticsResource {
 	public Response ingestData(Brand brand,
 			@QueryParam("startDate") String startDate,
 			@QueryParam("endDate") String endDate) {
-		if (brand.getAccountNativeId() == null
-				&& brand.getAccountNativeId().isEmpty())
+		if (brand.getAccountId() == null
+				&& brand.getAccountId().isEmpty())
 			return Response.status(Response.Status.BAD_REQUEST)
-					.entity(BRAND_ID_REQUIRED).build();
+					.entity(ACCOUNT_ID_REQUIRED).build();
 		BrandIngestRunUpdateView brandIngestRunUpdateView = brand.new BrandIngestRunUpdateView();
 		brandIngestRunUpdateView.setAccountId(brand.getAccountId());
 		brandIngestRunUpdateView.setAccountOauthtoken(brand
