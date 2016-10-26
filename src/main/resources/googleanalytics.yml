@@ -34,7 +34,7 @@ ingestorConfiguration:
   - All Mobile App Data
   reports:
   - name: userReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: userStats
     prefix: user_
     dimensions:
@@ -49,7 +49,7 @@ ingestorConfiguration:
     - ga:newUsers
     - ga:percentNewSessions
   - name: sessionReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: sessionStats
     prefix: session_
     dimensions:
@@ -63,7 +63,7 @@ ingestorConfiguration:
     - ga:avgSessionDuration
     - ga:hits
   - name: eventReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: eventStats
     prefix: event_
     dimensions:
@@ -79,7 +79,7 @@ ingestorConfiguration:
     - ga:sessionsWithEvent
     - ga:eventsPerSessionWithEvent
   - name: platformReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: platformStats
     prefix: platform_
     dimensions:
@@ -92,7 +92,7 @@ ingestorConfiguration:
     metrics:
     - ga:sessions
   - name: ecommerceTransactionReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: ecommerceTransactionStats
     prefix: ecommerceTransaction_
     dimensions:
@@ -104,7 +104,7 @@ ingestorConfiguration:
     - ga:transactionShipping
     - ga:transactionTax
   - name: ecommerceProductReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: ecommerceProductStats
     prefix: ecommerceProduct_
     dimensions:
@@ -119,7 +119,7 @@ ingestorConfiguration:
     - ga:itemRevenue
     - ga:productRefundAmount
   - name: ecommercePromotionReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: ecommercePromotionStats
     prefix: ecommercePromotion_
     dimensions:
@@ -134,7 +134,7 @@ ingestorConfiguration:
     - ga:internalPromotionClicks
     - ga:internalPromotionViews
   - name: trafficSourceReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: trafficSourceStats
     prefix: trafficSource_
     dimensions:
@@ -159,7 +159,7 @@ ingestorConfiguration:
     - ga:conversionRate
       
   - name: geoReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: geoStats
     prefix: geo_
     enrichGeo: 
@@ -175,7 +175,7 @@ ingestorConfiguration:
     metrics:
     - ga:sessions
   - name: adwordsReport
-    writeToIndex: analytics.new
+    writeToIndex: analytics
     writeToType: adwordsStats
     prefix: adwords_
     dimensions:

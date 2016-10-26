@@ -76,10 +76,10 @@ public class GoogleAnalyticsResource {
 	private static String APPLICATION_NAME = "GrowthHacker Analytics Resource";
 
 	/** The status success. */
-	private static String STATUS_SUCCESS = "success";
+	private static String STATUS_SUCCESS = "PROCESSED";
 
 	/** The status failure. */
-	private static String STATUS_FAILURE = "failure";
+	private static String STATUS_FAILURE = "FAILED";
 
 	/** The brand index. */
 	private static String BRAND_INDEX = "brands";
@@ -208,7 +208,7 @@ public class GoogleAnalyticsResource {
 			// update Brand record in ES
 			try {
 				UpdateResponse updateResponse = esClient
-						.prepareUpdate(BRAND_INDEX, BRAND_TYPE, brand.getId())
+						.prepareUpdate(BRAND_INDEX, BRAND_TYPE, brand.getAccountId())
 						.setDoc(this.mapper
 								.writeValueAsString(brandIngestRunUpdateView))
 						.execute().get();
@@ -322,7 +322,7 @@ public class GoogleAnalyticsResource {
 								.getNextPageToken();
 					}
 				}
-				boolean success = persistReports(results, report);
+				boolean success = persistReports(results, report, brand.getAccountId(), view.getViewId());
 				if (success) {
 					numberOfRowsCreated += results.size();
 				}
@@ -338,9 +338,9 @@ public class GoogleAnalyticsResource {
 	 * @param report the report
 	 * @return true, if successful
 	 */
-	private boolean persistReports(List<JsonObject> results, Report report) {
+	private boolean persistReports(List<JsonObject> results, Report report, String accountId, String viewId) {
 		// persist reports
-		logger.info("attempting to persist {} records", results.size());
+		logger.info("attempting to persist {} records for report {} ", results.size(), report.getName());
 		int persistedRecordsCount=0;
 		for (JsonObject result : results) {
 			// prefix each element and trim "ga:" with the respective
@@ -351,6 +351,8 @@ public class GoogleAnalyticsResource {
 						+ element.getKey().replaceAll("ga:", ""),
 						element.getValue());
 			}
+			prefixedObject.addProperty("accountId", accountId);
+			prefixedObject.addProperty("viewId", viewId);
 			// add timestamp2015042212
 			DateFormat readFormat = new SimpleDateFormat("yyyyMMddhh");
 			try {
@@ -377,7 +379,7 @@ public class GoogleAnalyticsResource {
 								+ prefixedObject.getAsString(), e);
 			}
 		}
-		logger.info("Persisted {} records", persistedRecordsCount);
+		logger.info("Persisted {} records for report {}", persistedRecordsCount, report.getName());
 		return true;
 	}
 
@@ -385,6 +387,8 @@ public class GoogleAnalyticsResource {
 	 * Prints the response.
 	 *
 	 * @param response the response
+	 * @param viewId 
+	 * @param accountId 
 	 * @return the list
 	 */
 	private static List<JsonObject> printResponse(GetReportsResponse response) {
