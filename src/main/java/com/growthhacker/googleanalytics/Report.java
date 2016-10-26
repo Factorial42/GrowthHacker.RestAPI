@@ -39,6 +39,10 @@ public class Report {
 	@NotEmpty
 	private List<String> metrics = Collections.emptyList();
 
+	@JsonProperty("computedMetrics")
+	@NotEmpty
+	private List<String> computedMetrics = Collections.emptyList();
+
 	/**
 	 * @return the name
 	 */
@@ -111,6 +115,20 @@ public class Report {
 	 */
 	public void setMetrics(List<String> metrics) {
 		this.metrics = metrics;
+	}
+
+	/**
+	 * @return the computedMetrics
+	 */
+	public List<String> getComputedMetrics() {
+		return computedMetrics;
+	}
+
+	/**
+	 * @param computedMetrics the computedMetrics to set
+	 */
+	public void setComputedMetrics(List<String> computedMetrics) {
+		this.computedMetrics = computedMetrics;
 	}
 
 	/**

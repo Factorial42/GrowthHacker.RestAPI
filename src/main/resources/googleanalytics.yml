@@ -155,6 +155,9 @@ ingestorConfiguration:
     - ga:avgSessionDuration
     - ga:transactions
     - ga:transactionRevenue
+    computedMetrics:
+    - ga:conversionRate
+      
   - name: geoReport
     writeToIndex: analytics.new
     writeToType: geoStats

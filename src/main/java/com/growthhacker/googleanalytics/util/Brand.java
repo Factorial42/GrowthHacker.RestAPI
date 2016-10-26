@@ -567,10 +567,6 @@ public class Brand {
 		@JsonProperty("account_record_lastrefresh")
 		private Integer accountRecordLastrefresh;
 		
-		/** The account record total. */
-		@JsonProperty("account_record_total")
-		private Integer accountRecordTotal;
-		
 		/** The account record status. */
 		@JsonProperty("account_record_lastrefresh_status")
 		private String accountRecordStatus;
@@ -597,7 +593,7 @@ public class Brand {
 		 * @return the account id
 		 */
 		public String getAccountId() {
-			return accountId;
+			return this.accountId;
 		}
 
 		/**
@@ -615,7 +611,7 @@ public class Brand {
 		 * @return the account record lastrefresh
 		 */
 		public Integer getAccountRecordLastrefresh() {
-			return accountRecordLastrefresh;
+			return this.accountRecordLastrefresh;
 		}
 
 		/**
@@ -628,30 +624,12 @@ public class Brand {
 		}
 
 		/**
-		 * Gets the account record total.
-		 *
-		 * @return the account record total
-		 */
-		public Integer getAccountRecordTotal() {
-			return accountRecordTotal;
-		}
-
-		/**
-		 * Sets the account record total.
-		 *
-		 * @param accountRecordTotal the new account record total
-		 */
-		public void setAccountRecordTotal(Integer accountRecordTotal) {
-			this.accountRecordTotal = accountRecordTotal;
-		}
-
-		/**
 		 * Gets the account record status.
 		 *
 		 * @return the account record status
 		 */
 		public String getAccountRecordStatus() {
-			return accountRecordStatus;
+			return this.accountRecordStatus;
 		}
 
 		/**
@@ -669,7 +647,7 @@ public class Brand {
 		 * @return the account record lastrefresh start timestamp
 		 */
 		public Long getAccountRecordLastrefreshStartTimestamp() {
-			return accountRecordLastrefreshStartTimestamp;
+			return this.accountRecordLastrefreshStartTimestamp;
 		}
 
 		/**
@@ -688,7 +666,7 @@ public class Brand {
 		 * @return the account record lastrefresh end timestamp
 		 */
 		public Long getAccountRecordLastrefreshEndTimestamp() {
-			return accountRecordLastrefreshEndTimestamp;
+			return this.accountRecordLastrefreshEndTimestamp;
 		}
 
 		/**
@@ -707,7 +685,7 @@ public class Brand {
 		 * @return the account refresh oauthtoken
 		 */
 		public String getAccountRefreshOauthtoken() {
-			return accountRefreshOauthtoken;
+			return this.accountRefreshOauthtoken;
 		}
 
 		/**
@@ -725,7 +703,7 @@ public class Brand {
 		 * @return the account oauthtoken
 		 */
 		public String getAccountOauthtoken() {
-			return accountOauthtoken;
+			return this.accountOauthtoken;
 		}
 
 		/**
@@ -743,7 +721,7 @@ public class Brand {
 		 * @return the updated at
 		 */
 		public String getUpdatedAt() {
-			return updatedAt;
+			return this.updatedAt;
 		}
 
 		/**
@@ -761,7 +739,7 @@ public class Brand {
 		 * @return the timestamp
 		 */
 		public String getTimestamp() {
-			return timestamp;
+			return this.timestamp;
 		}
 
 		/**

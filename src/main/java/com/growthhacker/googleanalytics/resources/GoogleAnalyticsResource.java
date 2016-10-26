@@ -22,6 +22,7 @@ import javax.ws.rs.core.Response;
 
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +69,7 @@ public class GoogleAnalyticsResource {
 	final static Logger logger = LoggerFactory
 			.getLogger(GoogleAnalyticsResource.class);
 
-	/** The Constant BRAND_ID_REQUIRED. */
+	/** The Constant ACCOUNT_ID_REQUIRED. */
 	public final static String ACCOUNT_ID_REQUIRED = "account_id is a required field for this API call";
 
 	/** The application name. */
@@ -107,20 +108,17 @@ public class GoogleAnalyticsResource {
 
 	/** The credential. */
 	private GoogleCredential credential;
-	
+
+	/** The mapper. */
 	private ObjectMapper mapper;
 
 	/**
 	 * Instantiates a new google analytics resource.
 	 *
-	 * @param client
-	 *            the client
-	 * @param configuration
-	 *            the configuration
-	 * @throws IOException
-	 *             Signals that an I/O exception has occurred.
-	 * @throws GeneralSecurityException
-	 *             the general security exception
+	 * @param client the client
+	 * @param configuration the configuration
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 * @throws GeneralSecurityException the general security exception
 	 */
 	public GoogleAnalyticsResource(Client client,
 			GoogleAnalyticsConfiguration configuration) throws IOException,
@@ -151,12 +149,9 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Ingest data.
 	 *
-	 * @param brand
-	 *            the brand
-	 * @param startDate
-	 *            the start date
-	 * @param endDate
-	 *            the end date
+	 * @param brand the brand
+	 * @param startDate the start date
+	 * @param endDate the end date
 	 * @return the response
 	 */
 	@POST
@@ -165,8 +160,7 @@ public class GoogleAnalyticsResource {
 	public Response ingestData(Brand brand,
 			@QueryParam("startDate") String startDate,
 			@QueryParam("endDate") String endDate) {
-		if (brand.getAccountId() == null
-				&& brand.getAccountId().isEmpty())
+		if (brand.getAccountId() == null && brand.getAccountId().isEmpty())
 			return Response.status(Response.Status.BAD_REQUEST)
 					.entity(ACCOUNT_ID_REQUIRED).build();
 		BrandIngestRunUpdateView brandIngestRunUpdateView = brand.new BrandIngestRunUpdateView();
@@ -215,8 +209,9 @@ public class GoogleAnalyticsResource {
 			try {
 				UpdateResponse updateResponse = esClient
 						.prepareUpdate(BRAND_INDEX, BRAND_TYPE, brand.getId())
-						.setDoc(this.mapper.writeValueAsString(brandIngestRunUpdateView)).execute()
-						.get();
+						.setDoc(this.mapper
+								.writeValueAsString(brandIngestRunUpdateView))
+						.execute().get();
 			} catch (InterruptedException | ExecutionException e) {
 				logger.error("Could not update BrandId:{} for Ingest status:",
 						brand.getId(), e);
@@ -237,17 +232,12 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Gets the and persist reports.
 	 *
-	 * @param analyticsReportingService
-	 *            the analytics reporting service
-	 * @param brand
-	 *            the brand
-	 * @param startDate
-	 *            the start date
-	 * @param endDate
-	 *            the end date
+	 * @param analyticsReportingService the analytics reporting service
+	 * @param brand the brand
+	 * @param startDate the start date
+	 * @param endDate the end date
 	 * @return the and persist reports
-	 * @throws IOException
-	 *             Signals that an I/O exception has occurred.
+	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private Integer getAndPersistReports(
 			AnalyticsReporting analyticsReportingService, Brand brand,
@@ -276,12 +266,16 @@ public class GoogleAnalyticsResource {
 			for (Report report : ingestorConfiguration.getReports()) {
 				List<Dimension> dimensions = new ArrayList<>();
 				List<Metric> metrics = new ArrayList<>();
+				List<String> computedMetrics = new ArrayList<>();
 				results = new ArrayList<>();
 				for (String dimensionName : report.getDimensions()) {
 					dimensions.add(new Dimension().setName(dimensionName));
 				}
 				for (String metricName : report.getMetrics()) {
 					metrics.add(new Metric().setExpression(metricName));
+				}
+				for (String computedMetricName : report.getComputedMetrics()) {
+					computedMetrics.add(computedMetricName);
 				}
 
 				// the same set of dimensions and metrics are called for all
@@ -306,6 +300,10 @@ public class GoogleAnalyticsResource {
 					if (report.getEnrichGeo() != null
 							&& report.getEnrichGeo().getEnable()) {
 						enrichGeoData(tempResults, report);
+					}
+					if (report.getComputedMetrics() != null
+							&& report.getComputedMetrics().size() > 0) {
+						addComputedMetrics(tempResults, report);
 					}
 					results.addAll(tempResults);
 
@@ -336,14 +334,14 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Persist reports.
 	 *
-	 * @param results
-	 *            the results
-	 * @param report
-	 *            the report
+	 * @param results the results
+	 * @param report the report
 	 * @return true, if successful
 	 */
 	private boolean persistReports(List<JsonObject> results, Report report) {
 		// persist reports
+		logger.info("attempting to persist {} records", results.size());
+		int persistedRecordsCount=0;
 		for (JsonObject result : results) {
 			// prefix each element and trim "ga:" with the respective
 			// stat's prefix
@@ -370,24 +368,23 @@ public class GoogleAnalyticsResource {
 			try {
 				esClient.prepareIndex(
 						report.getWriteToIndex(),
-						report.getWriteToType(),
-						prefixedObject.get(report.getPrefix() + "dateHour")
-								.getAsString())
+						report.getWriteToType())
 						.setSource(prefixedObject.toString()).execute().get();
+				persistedRecordsCount++;
 			} catch (InterruptedException | ExecutionException e) {
 				logger.error(
 						"Could not persist stat:"
 								+ prefixedObject.getAsString(), e);
 			}
 		}
+		logger.info("Persisted {} records", persistedRecordsCount);
 		return true;
 	}
 
 	/**
 	 * Prints the response.
 	 *
-	 * @param response
-	 *            the response
+	 * @param response the response
 	 * @return the list
 	 */
 	private static List<JsonObject> printResponse(GetReportsResponse response) {
@@ -441,12 +438,12 @@ public class GoogleAnalyticsResource {
 		for (JsonObject resultNode : tempResults) {
 			latElement = resultNode.get("ga:latitude");
 			lonElement = resultNode.get("ga:longitude");
-			if(report.getEnrichGeo().getType().equalsIgnoreCase("Point")) {
+			if (report.getEnrichGeo().getType().equalsIgnoreCase("Point")) {
 				JsonObject geoPointWrapper = new JsonObject();
 				geoPointWrapper.add("lon", lonElement);
 				geoPointWrapper.add("lat", latElement);
 				resultNode.add("location_point", geoPointWrapper);
-	
+
 				JsonArray geoPointArray = new JsonArray();
 				geoPointArray.add(lonElement);
 				geoPointArray.add(latElement);
@@ -459,10 +456,33 @@ public class GoogleAnalyticsResource {
 	}
 
 	/**
+	 * Adds the computed metrics.
+	 *
+	 * @param tempResults the temp results
+	 * @param report the report
+	 */
+	private void addComputedMetrics(List<JsonObject> tempResults, Report report) {
+		JsonElement sessionsCount = null, transactionsCount = null;
+		// handle trafficSourceReport report computed metrics
+		if (report.getName().equalsIgnoreCase("trafficSourceReport")) {
+			for (JsonObject resultNode : tempResults) {
+				sessionsCount = resultNode.get("ga:sessions");
+				transactionsCount = resultNode.get("ga:transactions");
+				if (sessionsCount != null && sessionsCount.getAsDouble() > 0
+						&& transactionsCount != null
+						&& transactionsCount.getAsDouble() > 0) {
+					resultNode.addProperty("ecommerceConversionRate",
+							(transactionsCount.getAsDouble() / sessionsCount
+									.getAsDouble()));
+				}
+			}
+		}
+	}
+
+	/**
 	 * The main method.
 	 *
-	 * @param args
-	 *            the arguments
+	 * @param args the arguments
 	 */
 	public static void main(String[] args) {
 
