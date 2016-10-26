@@ -307,6 +307,11 @@ public class GoogleAnalyticsResource {
 					}
 					results.addAll(tempResults);
 
+					boolean success = persistReports(results, report, brand.getAccountId(), view.getViewId());
+					if (success) {
+						numberOfRowsCreated += results.size();
+						results = new ArrayList<>();
+					}
 					String nextPageToken = response.getReports().get(0)
 							.getNextPageToken();
 					while (nextPageToken != null
@@ -320,11 +325,17 @@ public class GoogleAnalyticsResource {
 						}
 						nextPageToken = response.getReports().get(0)
 								.getNextPageToken();
+						success = persistReports(results, report, brand.getAccountId(), view.getViewId());
+						if (success) {
+							numberOfRowsCreated += results.size();
+							results = new ArrayList<>();
+						}
+						try {
+							Thread.sleep(ingestorConfiguration.getSleepBetweenRequestsInMillis());
+						} catch (InterruptedException e) {
+							logger.error("Sleep between requests interrupted", e);
+						}
 					}
-				}
-				boolean success = persistReports(results, report, brand.getAccountId(), view.getViewId());
-				if (success) {
-					numberOfRowsCreated += results.size();
 				}
 			}
 		}
@@ -473,8 +484,7 @@ public class GoogleAnalyticsResource {
 				sessionsCount = resultNode.get("ga:sessions");
 				transactionsCount = resultNode.get("ga:transactions");
 				if (sessionsCount != null && sessionsCount.getAsDouble() > 0
-						&& transactionsCount != null
-						&& transactionsCount.getAsDouble() > 0) {
+						&& transactionsCount != null) {
 					resultNode.addProperty("ecommerceConversionRate",
 							(transactionsCount.getAsDouble() / sessionsCount
 									.getAsDouble()));

@@ -1,0 +1,570 @@
+{
+  "template": "analytics*",
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "userStats": {
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "user_dateHour": {
+          "type": "date",
+          "format": "yyyyMMddHH"
+        },
+        "user_daysSinceLastSession": {
+          "type": "float"
+        },
+        "user_sessionCount": {
+          "type": "float"
+        },
+        "user_userDefinedValue": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "user_userType": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "user_sessionsPerUser": {
+          "type": "float"
+        }
+      }
+    },
+    "eventStats": {
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "event_avgEventValue": {
+          "type": "float"
+        },
+        "event_eventValue": {
+          "type": "float"
+        },
+        "event_eventsPerSessionWithEvent": {
+          "type": "float"
+        },
+        "event_dateHour": {
+          "type": "date",
+          "format": "yyyyMMddHH"
+        },
+        "event_eventAction": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "event_eventCategory": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "event_eventLabel": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "event_sessionsWithEvent": {
+          "type": "float"
+        },
+        "event_totalEvents": {
+          "type": "float"
+        },
+        "event_uniqueEvents": {
+          "type": "float"
+        }
+      }
+    },
+    "sessionStats": {
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "session_avgSessionDuration": {
+          "type": "float"
+        },
+        "session_bounceRate": {
+          "type": "float"
+        },
+        "session_bounces": {
+          "type": "float"
+        },
+        "session_dateHour": {
+          "type": "date",
+          "format": "yyyyMMddHH"
+        },
+        "session_sessionDurationBucket": {
+          "type": "float"
+        },
+        "session_hits": {
+          "type": "float"
+        },
+        "session_sessionDuration": {
+          "type": "float"
+        },
+        "session_sessions": {
+          "type": "float"
+        }
+      }
+    },
+    "ecommerceProductStats": {
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "ecommerceProduct_dateHour": {
+          "type": "date",
+          "format": "yyyyMMddHH"
+        },
+        "ecommerceProduct_productName": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "ecommerceProduct_productSku": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "ecommerceProduct_transactionId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "ecommerceProduct_itemQuantity": {
+          "type": "float"
+        },
+        "ecommerceProduct_itemRevenue": {
+          "type": "float"
+        },
+        "ecommerceProduct_productRefundAmount": {
+          "type": "float"
+        },
+        "ecommerceProduct_revenuePerItem": {
+          "type": "float"
+        }
+      }
+    },
+    "geoStats": {
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "geo_city": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "geo_country": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "geo_dateHour": {
+          "type": "date",
+          "format": "yyyyMMddHH"
+        },
+        "geo_location": {
+          "type": "geo_shape",
+          "tree": "quadtree",
+          "tree_levels": 26
+        },
+        "geo_location_point": {
+          "type": "geo_point"
+        },
+        "geo_region": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "geo_sessions": {
+          "type": "float"
+        }
+      }
+    },
+    "platformStats": {
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "platform_browser": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "platform_browserVersion": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "platform_dateHour": {
+          "type": "date",
+          "format": "yyyyMMddHH"
+        },
+        "platform_deviceCategory": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "platform_operatingSystem": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "platform_operatingSystemVersion": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "platform_sessions": {
+          "type": "float"
+        }
+      }
+    },
+    "trafficSourceStats": {
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_avgSessionDuration": {
+          "type": "float"
+        },
+        "trafficSource_bounceRate": {
+          "type": "float"
+        },
+        "trafficSource_campaign": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_channelGrouping": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_dateHour": {
+          "type": "date",
+          "format": "yyyyMMddHH"
+        },
+        "trafficSource_fullReferrer": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_keyword": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_medium": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_socialNetwork": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_source": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_sourceMedium": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "trafficSource_newUsers": {
+          "type": "float"
+        },
+        "trafficSource_organicSearches": {
+          "type": "float"
+        },
+        "trafficSource_pageviewsPerSession": {
+          "type": "float"
+        },
+        "trafficSource_percentNewSessions": {
+          "type": "float"
+        },
+        "trafficSource_sessions": {
+          "type": "float"
+        },
+        "trafficSource_transactionRevenue": {
+          "type": "float"
+        },
+        "trafficSource_transactions": {
+          "type": "float"
+        }
+      }
+    },
+    "ecommerceTransactionStats": {
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "ecommerceTransaction_dateHour": {
+          "type": "date",
+          "format": "yyyyMMddHH"
+        },
+        "ecommerceTransaction_daysToTransaction": {
+          "type": "float"
+        },
+        "ecommerceTransaction_orderCouponCode": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "ecommerceTransaction_sessionsToTransaction": {
+          "type": "float"
+        },
+        "ecommerceTransaction_transactionId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "ecommerceTransaction_revenue": {
+          "type": "float"
+        },
+        "ecommerceTransaction_shipping": {
+          "type": "float"
+        },
+        "ecommerceTransaction_tax": {
+          "type": "float"
+        }
+      }
+    }
+  },
+  "aliases": {
+    "analytics": {}
+  }
+}

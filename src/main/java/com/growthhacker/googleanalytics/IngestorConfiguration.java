@@ -21,6 +21,10 @@ public class IngestorConfiguration {
 	@NotEmpty
 	private String samplingLevel;
 
+	@JsonProperty("sleepBetweenRequestsInMillis")
+	@NotEmpty
+	private long sleepBetweenRequestsInMillis;
+
 	@JsonProperty("views")
 	@NotEmpty
 	private List<String> views = Collections.emptyList();
@@ -72,6 +76,20 @@ public class IngestorConfiguration {
 	 */
 	public void setSamplingLevel(String samplingLevel) {
 		this.samplingLevel = samplingLevel;
+	}
+
+	/**
+	 * @return the sleepBetweenRequestsInMillis
+	 */
+	public long getSleepBetweenRequestsInMillis() {
+		return sleepBetweenRequestsInMillis;
+	}
+
+	/**
+	 * @param sleepBetweenRequestsInMillis the sleepBetweenRequestsInMillis to set
+	 */
+	public void setSleepBetweenRequestsInMillis(long sleepBetweenRequestsInMillis) {
+		this.sleepBetweenRequestsInMillis = sleepBetweenRequestsInMillis;
 	}
 
 	/**

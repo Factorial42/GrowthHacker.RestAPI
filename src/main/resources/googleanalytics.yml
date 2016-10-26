@@ -29,6 +29,7 @@ ingestorConfiguration:
   historicStartDate: 1DaysAgo
   historicEndDate: today
   samplingLevel: LARGE
+  sleepBetweenRequestsInMillis: 1000 
   views:
   - All Web Site Data
   - All Mobile App Data
