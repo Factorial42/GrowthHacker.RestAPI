@@ -214,7 +214,7 @@ public class GoogleAnalyticsResource {
 						.execute().get();
 			} catch (InterruptedException | ExecutionException e) {
 				logger.error("Could not update BrandId:{} for Ingest status:",
-						brand.getId(), e);
+						brand.getAccountId(), e);
 			}
 
 			return Response.status(Response.Status.OK)
