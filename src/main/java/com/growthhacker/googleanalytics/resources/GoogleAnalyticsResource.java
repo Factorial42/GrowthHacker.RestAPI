@@ -258,12 +258,12 @@ public class GoogleAnalyticsResource {
 			if (!views.contains(view.getViewName())) {
 				continue;
 			}
-			ReportRequest request = new ReportRequest().setDateRanges(
-					Arrays.asList(dateRange)).setSamplingLevel(
-					ingestorConfiguration.getSamplingLevel());
 
 			// for each view, get all reports configured
 			for (Report report : ingestorConfiguration.getReports()) {
+				ReportRequest request = new ReportRequest().setDateRanges(
+						Arrays.asList(dateRange)).setSamplingLevel(
+						ingestorConfiguration.getSamplingLevel());
 				List<Dimension> dimensions = new ArrayList<>();
 				List<Metric> metrics = new ArrayList<>();
 				List<String> computedMetrics = new ArrayList<>();
@@ -310,8 +310,8 @@ public class GoogleAnalyticsResource {
 					boolean success = persistReports(results, report, brand.getAccountId(), view.getViewId());
 					if (success) {
 						numberOfRowsCreated += results.size();
-						results = new ArrayList<>();
 					}
+					results = new ArrayList<>();
 					String nextPageToken = response.getReports().get(0)
 							.getNextPageToken();
 					while (nextPageToken != null
@@ -328,8 +328,8 @@ public class GoogleAnalyticsResource {
 						success = persistReports(results, report, brand.getAccountId(), view.getViewId());
 						if (success) {
 							numberOfRowsCreated += results.size();
-							results = new ArrayList<>();
 						}
+						results = new ArrayList<>();
 						try {
 							Thread.sleep(ingestorConfiguration.getSleepBetweenRequestsInMillis());
 						} catch (InterruptedException e) {
@@ -358,9 +358,14 @@ public class GoogleAnalyticsResource {
 			// stat's prefix
 			JsonObject prefixedObject = new JsonObject();
 			for (Entry<String, JsonElement> element : result.entrySet()) {
-				prefixedObject.add(report.getPrefix()
-						+ element.getKey().replaceAll("ga:", ""),
-						element.getValue());
+				if (!element.getKey().equalsIgnoreCase("ga:dateHour")) {
+					prefixedObject.add(report.getPrefix()
+							+ element.getKey().replaceAll("ga:", ""),
+							element.getValue());
+				} else {
+					prefixedObject.add(element.getKey().replaceAll("ga:", ""),
+							element.getValue());
+				}
 			}
 			prefixedObject.addProperty("accountId", accountId);
 			prefixedObject.addProperty("viewId", viewId);
@@ -370,8 +375,7 @@ public class GoogleAnalyticsResource {
 				prefixedObject.addProperty(
 						"@timestamp",
 						readFormat.parse(
-								prefixedObject.get(
-										report.getPrefix() + "dateHour")
+								prefixedObject.get("dateHour")
 										.getAsString()).getTime());
 			} catch (ParseException e) {
 				logger.error("Could not parse dateHour:"

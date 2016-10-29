@@ -34,51 +34,30 @@ ingestorConfiguration:
   - All Web Site Data
   - All Mobile App Data
   reports:
-  - name: userReport
+  - name: trafficSourceReport
     writeToIndex: analytics
-    writeToType: userStats
-    prefix: user_
+    writeToType: trafficSourceStats
+    prefix: trafficSource_
     dimensions:
     - ga:dateHour
-    - ga:userType
-    - ga:userDefinedValue
-    - ga:daysSinceLastSession
-    - ga:sessionCount
+    - ga:fullReferrer
+    - ga:campaign
+    - ga:sourceMedium
+    - ga:keyword
+    - ga:socialNetwork
+    - ga:channelGrouping
     metrics:
-    - ga:sessionsPerUser
-    - ga:users
-    - ga:newUsers
+    - ga:organicSearches
     - ga:percentNewSessions
-  - name: sessionReport
-    writeToIndex: analytics
-    writeToType: sessionStats
-    prefix: session_
-    dimensions:
-    - ga:sessionDurationBucket
-    - ga:dateHour
-    metrics:
     - ga:sessions
-    - ga:bounces
+    - ga:newUsers
     - ga:bounceRate
-    - ga:sessionDuration
+    - ga:pageviewsPerSession
     - ga:avgSessionDuration
-    - ga:hits
-  - name: eventReport
-    writeToIndex: analytics
-    writeToType: eventStats
-    prefix: event_
-    dimensions:
-    - ga:dateHour
-    - ga:eventCategory
-    - ga:eventAction
-    - ga:eventLabel
-    metrics:
-    - ga:totalEvents
-    - ga:uniqueEvents
-    - ga:eventValue
-    - ga:avgEventValue
-    - ga:sessionsWithEvent
-    - ga:eventsPerSessionWithEvent
+    - ga:transactions
+    - ga:transactionRevenue
+    computedMetrics:
+    - ga:conversionRate
   - name: platformReport
     writeToIndex: analytics
     writeToType: platformStats
@@ -133,32 +112,7 @@ ingestorConfiguration:
     metrics:
     - ga:internalPromotionCTR
     - ga:internalPromotionClicks
-    - ga:internalPromotionViews
-  - name: trafficSourceReport
-    writeToIndex: analytics
-    writeToType: trafficSourceStats
-    prefix: trafficSource_
-    dimensions:
-    - ga:dateHour
-    - ga:fullReferrer
-    - ga:campaign
-    - ga:sourceMedium
-    - ga:keyword
-    - ga:socialNetwork
-    - ga:channelGrouping
-    metrics:
-    - ga:organicSearches
-    - ga:percentNewSessions
-    - ga:sessions
-    - ga:newUsers
-    - ga:bounceRate
-    - ga:pageviewsPerSession
-    - ga:avgSessionDuration
-    - ga:transactions
-    - ga:transactionRevenue
-    computedMetrics:
-    - ga:conversionRate
-      
+    - ga:internalPromotionViews   
   - name: geoReport
     writeToIndex: analytics
     writeToType: geoStats
@@ -197,7 +151,52 @@ ingestorConfiguration:
     - ga:costPerTransaction
     - ga:costPerConversion
     - ga:RPC
-    - ga:ROAS
+    - ga:ROAS  
+  - name: sessionReport
+    writeToIndex: analytics
+    writeToType: sessionStats
+    prefix: session_
+    dimensions:
+    - ga:sessionDurationBucket
+    - ga:dateHour
+    metrics:
+    - ga:sessions
+    - ga:bounces
+    - ga:bounceRate
+    - ga:sessionDuration
+    - ga:avgSessionDuration
+    - ga:hits
+  - name: eventReport
+    writeToIndex: analytics
+    writeToType: eventStats
+    prefix: event_
+    dimensions:
+    - ga:dateHour
+    - ga:eventCategory
+    - ga:eventAction
+    - ga:eventLabel
+    metrics:
+    - ga:totalEvents
+    - ga:uniqueEvents
+    - ga:eventValue
+    - ga:avgEventValue
+    - ga:sessionsWithEvent
+    - ga:eventsPerSessionWithEvent 
+  - name: userReport
+    writeToIndex: analytics
+    writeToType: userStats
+    prefix: user_
+    dimensions:
+    - ga:dateHour
+    - ga:userType
+    - ga:userDefinedValue
+    - ga:daysSinceLastSession
+    - ga:sessionCount
+    metrics:
+    - ga:sessionsPerUser
+    - ga:users
+    - ga:newUsers
+    - ga:percentNewSessions
   
 swagger:
   resourcePackage: <a comma separated string of the packages that contain your @Api annotated resources>
