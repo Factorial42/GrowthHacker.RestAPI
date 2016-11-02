@@ -193,13 +193,17 @@ public class GoogleAnalyticsResource {
 
 			brandIngestRunUpdateView.setAccountRecordStatus(STATUS_SUCCESS);
 			// update oauth token
-			if (!brandIngestRunUpdateView.getAccountOauthtoken().equals(
-					this.credential.getAccessToken())) {
+			if (brandIngestRunUpdateView.getAccountOauthtoken() != null
+					&& this.credential.getAccessToken() != null
+					&& !brandIngestRunUpdateView.getAccountOauthtoken().equals(
+							this.credential.getAccessToken())) {
 				brandIngestRunUpdateView.setAccountOauthtoken(this.credential
 						.getAccessToken());
 			}
-			if (!brandIngestRunUpdateView.getAccountRefreshOauthtoken().equals(
-					this.credential.getRefreshToken())) {
+			if (brandIngestRunUpdateView.getAccountRefreshOauthtoken() != null
+					&& this.credential.getRefreshToken() != null
+					&& !brandIngestRunUpdateView.getAccountRefreshOauthtoken()
+							.equals(this.credential.getRefreshToken())) {
 				brandIngestRunUpdateView
 						.setAccountRefreshOauthtoken(this.credential
 								.getRefreshToken());
@@ -294,7 +298,7 @@ public class GoogleAnalyticsResource {
 
 				// Call the batchGet method.
 				GetReportsResponse response = analyticsReportingService
-						.reports().batchGet(getReport).execute();
+						.reports().batchGet(getReport).setQuotaUser(brand.getAccountId()).execute();
 
 				if ((tempResults = printResponse(response)) != null) {
 					if (report.getEnrichGeo() != null
