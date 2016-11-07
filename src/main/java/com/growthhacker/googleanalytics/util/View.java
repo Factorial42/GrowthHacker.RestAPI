@@ -12,7 +12,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class View {
-
+	
+	/** The account native id. */
+	@JsonProperty("view_native_id")
+	private String viewNativeId;
 	@JsonProperty("view_id")
 	private String viewId;
 	@JsonProperty("view_name")
@@ -31,6 +34,19 @@ public class View {
 	private Boolean viewEnhancedEcommerceTracking;
 	@JsonProperty("_id")
 	private String id;
+
+	/**
+	 * @return the viewNativeId
+	 */
+	public String getViewNativeId() {
+		return viewNativeId;
+	}
+	/**
+	 * @param viewNativeId the viewNativeId to set
+	 */
+	public void setViewNativeId(String viewNativeId) {
+		this.viewNativeId = viewNativeId;
+	}
 	/**
 	 * @return the viewId
 	 */

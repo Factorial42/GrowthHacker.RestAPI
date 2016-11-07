@@ -1,0 +1,18 @@
+{
+  "template": "{
+    \"version\": true,
+    \"size\": 0,
+    \"query\": {
+      \"match\": {
+        \"_type\": \"{{ type }}\"
+      }
+    },
+    \"aggs\": {
+      \"latest_dateHour\": {
+        \"max\": {
+          \"field\": \"dateHour\"
+        }
+      }
+    }
+  }"
+}

@@ -26,7 +26,7 @@ clientSecretResourceConfiguration:
 
     
 ingestorConfiguration:
-  historicStartDate: 1DaysAgo
+  historicStartDate: 2005-01-01
   historicEndDate: today
   samplingLevel: LARGE
   sleepBetweenRequestsInMillis: 1000 

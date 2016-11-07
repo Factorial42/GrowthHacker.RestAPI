@@ -36,10 +36,6 @@ public class Brand {
 	@JsonProperty("account_tetherer_email")
 	private String accountTethererEmail;
 	
-	/** The account native id. */
-	@JsonProperty("account_native_id")
-	private String accountNativeId;
-	
 	/** The account default profile id. */
 	@JsonProperty("account_default_profile_id")
 	private String accountDefaultProfileId;
@@ -200,24 +196,6 @@ public class Brand {
 	 */
 	public void setAccountTethererEmail(String accountTethererEmail) {
 		this.accountTethererEmail = accountTethererEmail;
-	}
-
-	/**
-	 * Gets the account native id.
-	 *
-	 * @return the account native id
-	 */
-	public String getAccountNativeId() {
-		return accountNativeId;
-	}
-
-	/**
-	 * Sets the account native id.
-	 *
-	 * @param accountNativeId the new account native id
-	 */
-	public void setAccountNativeId(String accountNativeId) {
-		this.accountNativeId = accountNativeId;
 	}
 
 	/**

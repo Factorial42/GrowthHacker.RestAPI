@@ -8,11 +8,15 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -20,9 +24,15 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
-import org.mortbay.log.Log;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.script.Template;
+import org.elasticsearch.script.mustache.MustacheScriptEngineService;
+import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +55,6 @@ import com.google.api.services.analyticsreporting.v4.model.Metric;
 import com.google.api.services.analyticsreporting.v4.model.MetricHeaderEntry;
 import com.google.api.services.analyticsreporting.v4.model.ReportRequest;
 import com.google.api.services.analyticsreporting.v4.model.ReportRow;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -72,6 +81,9 @@ public class GoogleAnalyticsResource {
 	/** The Constant ACCOUNT_ID_REQUIRED. */
 	public final static String ACCOUNT_ID_REQUIRED = "account_id is a required field for this API call";
 
+	/** The Constant START_DATE_REQUIRED. */
+	public final static String START_DATE_REQUIRED = "startDate is a required field if forceStartDate is true for this API call";
+
 	/** The application name. */
 	private static String APPLICATION_NAME = "GrowthHacker Analytics Resource";
 
@@ -86,6 +98,9 @@ public class GoogleAnalyticsResource {
 
 	/** The brand type. */
 	private static String BRAND_TYPE = "brand";
+
+	/** The analytics search template. */
+	private static String ANALYTICS_SEARCH_TEMPLATE = "st.analytics";
 
 	/** The Constant JSON_FACTORY. */
 	private static final JsonFactory JSON_FACTORY = GsonFactory
@@ -152,17 +167,23 @@ public class GoogleAnalyticsResource {
 	 * @param brand the brand
 	 * @param startDate the start date
 	 * @param endDate the end date
+	 * @param forceStartDate the force start date
 	 * @return the response
 	 */
 	@POST
 	@Timed
 	@Path("/ingestData")
-	public Response ingestData(Brand brand,
+	public Response ingestData(
+			Brand brand,
 			@QueryParam("startDate") String startDate,
-			@QueryParam("endDate") String endDate) {
+			@QueryParam("endDate") String endDate,
+			@QueryParam("forceStartDate") @DefaultValue("false") Boolean forceStartDate) {
 		if (brand.getAccountId() == null && brand.getAccountId().isEmpty())
 			return Response.status(Response.Status.BAD_REQUEST)
 					.entity(ACCOUNT_ID_REQUIRED).build();
+		if (forceStartDate && (startDate == null || startDate.isEmpty()))
+			return Response.status(Response.Status.BAD_REQUEST)
+					.entity(START_DATE_REQUIRED).build();
 		BrandIngestRunUpdateView brandIngestRunUpdateView = brand.new BrandIngestRunUpdateView();
 		brandIngestRunUpdateView.setAccountId(brand.getAccountId());
 		brandIngestRunUpdateView.setAccountOauthtoken(brand
@@ -179,8 +200,10 @@ public class GoogleAnalyticsResource {
 			brandIngestRunUpdateView
 					.setAccountRecordLastrefreshStartTimestamp(Instant.now()
 							.toEpochMilli());
+			// get data and persist
 			Integer numberOfRowsCreated = getAndPersistReports(
-					analyticsReportingService, brand, startDate, endDate);
+					analyticsReportingService, brand, startDate, endDate,
+					forceStartDate);
 			brandIngestRunUpdateView
 					.setAccountRecordLastrefreshEndTimestamp(Instant.now()
 							.toEpochMilli());
@@ -212,7 +235,13 @@ public class GoogleAnalyticsResource {
 			// update Brand record in ES
 			try {
 				UpdateResponse updateResponse = esClient
-						.prepareUpdate(BRAND_INDEX, BRAND_TYPE, brand.getAccountId())
+						.prepareUpdate(BRAND_INDEX, BRAND_TYPE,
+								brand.getAccountId())
+						.setScript(
+								new Script("ctx._source.account_record_total+="
+										+ brand.getAccountRecordLastrefresh(),
+										ScriptService.ScriptType.INLINE, null,
+										null))
 						.setDoc(this.mapper
 								.writeValueAsString(brandIngestRunUpdateView))
 						.execute().get();
@@ -240,12 +269,14 @@ public class GoogleAnalyticsResource {
 	 * @param brand the brand
 	 * @param startDate the start date
 	 * @param endDate the end date
+	 * @param forceStartDate the force start date
 	 * @return the and persist reports
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private Integer getAndPersistReports(
 			AnalyticsReporting analyticsReportingService, Brand brand,
-			String startDate, String endDate) throws IOException {
+			String startDate, String endDate, Boolean forceStartDate)
+			throws IOException {
 		int numberOfRowsCreated = 0;
 		List<JsonObject> results = new ArrayList<>();
 		List<JsonObject> tempResults = null;
@@ -265,6 +296,17 @@ public class GoogleAnalyticsResource {
 
 			// for each view, get all reports configured
 			for (Report report : ingestorConfiguration.getReports()) {
+				if (!forceStartDate) {
+					// change start date based on last record of each report
+					// type
+					String lastRecordDateHour = findLastRecordDate(
+							report.getWriteToIndex(), report.getWriteToType());
+					if (lastRecordDateHour != null
+							&& !lastRecordDateHour.isEmpty()) {
+						dateRange.setStartDate(lastRecordDateHour);
+					}
+				}
+
 				ReportRequest request = new ReportRequest().setDateRanges(
 						Arrays.asList(dateRange)).setSamplingLevel(
 						ingestorConfiguration.getSamplingLevel());
@@ -298,7 +340,8 @@ public class GoogleAnalyticsResource {
 
 				// Call the batchGet method.
 				GetReportsResponse response = analyticsReportingService
-						.reports().batchGet(getReport).setQuotaUser(brand.getAccountId()).execute();
+						.reports().batchGet(getReport)
+						.setQuotaUser(brand.getAccountId()).execute();
 
 				if ((tempResults = printResponse(response)) != null) {
 					if (report.getEnrichGeo() != null
@@ -311,7 +354,9 @@ public class GoogleAnalyticsResource {
 					}
 					results.addAll(tempResults);
 
-					boolean success = persistReports(results, report, brand.getAccountId(), view.getViewId());
+					boolean success = persistReports(results, report,
+							brand.getAccountId(), view.getViewId(),
+							view.getViewNativeId());
 					if (success) {
 						numberOfRowsCreated += results.size();
 					}
@@ -329,15 +374,19 @@ public class GoogleAnalyticsResource {
 						}
 						nextPageToken = response.getReports().get(0)
 								.getNextPageToken();
-						success = persistReports(results, report, brand.getAccountId(), view.getViewId());
+						success = persistReports(results, report,
+								brand.getAccountId(), view.getViewId(),
+								view.getViewNativeId());
 						if (success) {
 							numberOfRowsCreated += results.size();
 						}
 						results = new ArrayList<>();
 						try {
-							Thread.sleep(ingestorConfiguration.getSleepBetweenRequestsInMillis());
+							Thread.sleep(ingestorConfiguration
+									.getSleepBetweenRequestsInMillis());
 						} catch (InterruptedException e) {
-							logger.error("Sleep between requests interrupted", e);
+							logger.error("Sleep between requests interrupted",
+									e);
 						}
 					}
 				}
@@ -351,12 +400,17 @@ public class GoogleAnalyticsResource {
 	 *
 	 * @param results the results
 	 * @param report the report
+	 * @param accountId the account id
+	 * @param viewId the view id
+	 * @param viewNativeId the view native id
 	 * @return true, if successful
 	 */
-	private boolean persistReports(List<JsonObject> results, Report report, String accountId, String viewId) {
+	private boolean persistReports(List<JsonObject> results, Report report,
+			String accountId, String viewId, String viewNativeId) {
 		// persist reports
-		logger.info("attempting to persist {} records for report {} ", results.size(), report.getName());
-		int persistedRecordsCount=0;
+		logger.info("attempting to persist {} records for report {} ",
+				results.size(), report.getName());
+		int persistedRecordsCount = 0;
 		for (JsonObject result : results) {
 			// prefix each element and trim "ga:" with the respective
 			// stat's prefix
@@ -373,22 +427,22 @@ public class GoogleAnalyticsResource {
 			}
 			prefixedObject.addProperty("accountId", accountId);
 			prefixedObject.addProperty("viewId", viewId);
+			prefixedObject.addProperty("viewNativeId", viewNativeId);
 			// add timestamp2015042212
 			DateFormat readFormat = new SimpleDateFormat("yyyyMMddhh");
 			try {
 				prefixedObject.addProperty(
 						"@timestamp",
 						readFormat.parse(
-								prefixedObject.get("dateHour")
-										.getAsString()).getTime());
+								prefixedObject.get("dateHour").getAsString())
+								.getTime());
 			} catch (ParseException e) {
 				logger.error("Could not parse dateHour:"
 						+ prefixedObject.getAsString());
 			}
 			// index on ES
 			try {
-				esClient.prepareIndex(
-						report.getWriteToIndex(),
+				esClient.prepareIndex(report.getWriteToIndex(),
 						report.getWriteToType())
 						.setSource(prefixedObject.toString()).execute().get();
 				persistedRecordsCount++;
@@ -398,7 +452,8 @@ public class GoogleAnalyticsResource {
 								+ prefixedObject.getAsString(), e);
 			}
 		}
-		logger.info("Persisted {} records for report {}", persistedRecordsCount, report.getName());
+		logger.info("Persisted {} records for report {}",
+				persistedRecordsCount, report.getName());
 		return true;
 	}
 
@@ -406,8 +461,6 @@ public class GoogleAnalyticsResource {
 	 * Prints the response.
 	 *
 	 * @param response the response
-	 * @param viewId 
-	 * @param accountId 
 	 * @return the list
 	 */
 	private static List<JsonObject> printResponse(GetReportsResponse response) {
@@ -499,6 +552,45 @@ public class GoogleAnalyticsResource {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Find last record date.
+	 *
+	 * @param index the index
+	 * @param type the type
+	 * @return the string
+	 */
+	private String findLastRecordDate(String index, String type) {
+		Map<String, Object> templateParams = new HashMap<>();
+		templateParams.put("type", type);
+
+		Template template = new Template(ANALYTICS_SEARCH_TEMPLATE,
+				ScriptService.ScriptType.INDEXED,
+				MustacheScriptEngineService.NAME, null, templateParams);
+		SearchRequestBuilder request = esClient.prepareSearch(index)
+				.setTemplate(template);
+		SearchResponse response = request.execute().actionGet();
+		InternalMax maxMetric = response.getAggregations() != null ? response
+				.getAggregations().get("latest_dateHour") : null;
+
+		String lastRecordDate = (response.getHits().getTotalHits() > 0 && (maxMetric != null)) ? maxMetric
+				.getValueAsString() != null ? maxMetric.getValueAsString() : ""
+				: "";
+
+		DateFormat readFormat = new SimpleDateFormat("yyyyMMddhh");
+		try {
+			Date parsedFormat = readFormat.parse(lastRecordDate);
+			DateFormat destDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+			lastRecordDate = destDateFormat.format(parsedFormat);
+		} catch (ParseException e) {
+			logger.error(
+					"Could not read last record date-formatting issues for {}",
+					lastRecordDate, e);
+		}
+
+		return lastRecordDate;
 	}
 
 	/**
