@@ -28,7 +28,6 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.script.Template;
 import org.elasticsearch.script.mustache.MustacheScriptEngineService;
@@ -41,6 +40,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonError.ErrorInfo;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -130,10 +131,14 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Instantiates a new google analytics resource.
 	 *
-	 * @param client the client
-	 * @param configuration the configuration
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 * @throws GeneralSecurityException the general security exception
+	 * @param client
+	 *            the client
+	 * @param configuration
+	 *            the configuration
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
+	 * @throws GeneralSecurityException
+	 *             the general security exception
 	 */
 	public GoogleAnalyticsResource(Client client,
 			GoogleAnalyticsConfiguration configuration) throws IOException,
@@ -164,10 +169,14 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Ingest data.
 	 *
-	 * @param brand the brand
-	 * @param startDate the start date
-	 * @param endDate the end date
-	 * @param forceStartDate the force start date
+	 * @param brand
+	 *            the brand
+	 * @param startDate
+	 *            the start date
+	 * @param endDate
+	 *            the end date
+	 * @param forceStartDate
+	 *            the force start date
 	 * @return the response
 	 */
 	@POST
@@ -237,11 +246,6 @@ public class GoogleAnalyticsResource {
 				UpdateResponse updateResponse = esClient
 						.prepareUpdate(BRAND_INDEX, BRAND_TYPE,
 								brand.getAccountId())
-						.setScript(
-								new Script("ctx._source.account_record_total+="
-										+ brand.getAccountRecordLastrefresh(),
-										ScriptService.ScriptType.INLINE, null,
-										null))
 						.setDoc(this.mapper
 								.writeValueAsString(brandIngestRunUpdateView))
 						.execute().get();
@@ -265,13 +269,19 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Gets the and persist reports.
 	 *
-	 * @param analyticsReportingService the analytics reporting service
-	 * @param brand the brand
-	 * @param startDate the start date
-	 * @param endDate the end date
-	 * @param forceStartDate the force start date
+	 * @param analyticsReportingService
+	 *            the analytics reporting service
+	 * @param brand
+	 *            the brand
+	 * @param startDate
+	 *            the start date
+	 * @param endDate
+	 *            the end date
+	 * @param forceStartDate
+	 *            the force start date
 	 * @return the and persist reports
-	 * @throws IOException Signals that an I/O exception has occurred.
+	 * @throws IOException
+	 *             Signals that an I/O exception has occurred.
 	 */
 	private Integer getAndPersistReports(
 			AnalyticsReporting analyticsReportingService, Brand brand,
@@ -339,9 +349,8 @@ public class GoogleAnalyticsResource {
 						.setReportRequests(requests);
 
 				// Call the batchGet method.
-				GetReportsResponse response = analyticsReportingService
-						.reports().batchGet(getReport)
-						.setQuotaUser(brand.getAccountId()).execute();
+				GetReportsResponse response = requestWithExponentialBackoff(
+						analyticsReportingService, getReport, brand);
 
 				if ((tempResults = printResponse(response)) != null) {
 					if (report.getEnrichGeo() != null
@@ -367,8 +376,8 @@ public class GoogleAnalyticsResource {
 							&& Integer.valueOf(nextPageToken) != null
 							&& Integer.valueOf(nextPageToken) > 0) {
 						request.setPageToken(nextPageToken);
-						response = analyticsReportingService.reports()
-								.batchGet(getReport).execute();
+						response = requestWithExponentialBackoff(
+								analyticsReportingService, getReport, brand);
 						if ((tempResults = printResponse(response)) != null) {
 							results.addAll(tempResults);
 						}
@@ -381,13 +390,6 @@ public class GoogleAnalyticsResource {
 							numberOfRowsCreated += results.size();
 						}
 						results = new ArrayList<>();
-						try {
-							Thread.sleep(ingestorConfiguration
-									.getSleepBetweenRequestsInMillis());
-						} catch (InterruptedException e) {
-							logger.error("Sleep between requests interrupted",
-									e);
-						}
 					}
 				}
 			}
@@ -398,11 +400,16 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Persist reports.
 	 *
-	 * @param results the results
-	 * @param report the report
-	 * @param accountId the account id
-	 * @param viewId the view id
-	 * @param viewNativeId the view native id
+	 * @param results
+	 *            the results
+	 * @param report
+	 *            the report
+	 * @param accountId
+	 *            the account id
+	 * @param viewId
+	 *            the view id
+	 * @param viewNativeId
+	 *            the view native id
 	 * @return true, if successful
 	 */
 	private boolean persistReports(List<JsonObject> results, Report report,
@@ -460,7 +467,8 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Prints the response.
 	 *
-	 * @param response the response
+	 * @param response
+	 *            the response
 	 * @return the list
 	 */
 	private static List<JsonObject> printResponse(GetReportsResponse response) {
@@ -505,8 +513,10 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Enrich geo data.
 	 *
-	 * @param tempResults the temp results
-	 * @param report the report
+	 * @param tempResults
+	 *            the temp results
+	 * @param report
+	 *            the report
 	 */
 	private static void enrichGeoData(List<JsonObject> tempResults,
 			Report report) {
@@ -534,8 +544,10 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Adds the computed metrics.
 	 *
-	 * @param tempResults the temp results
-	 * @param report the report
+	 * @param tempResults
+	 *            the temp results
+	 * @param report
+	 *            the report
 	 */
 	private void addComputedMetrics(List<JsonObject> tempResults, Report report) {
 		JsonElement sessionsCount = null, transactionsCount = null;
@@ -557,8 +569,10 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Find last record date.
 	 *
-	 * @param index the index
-	 * @param type the type
+	 * @param index
+	 *            the index
+	 * @param type
+	 *            the type
 	 * @return the string
 	 */
 	private String findLastRecordDate(String index, String type) {
@@ -579,24 +593,105 @@ public class GoogleAnalyticsResource {
 				: "";
 
 		DateFormat readFormat = new SimpleDateFormat("yyyyMMddhh");
-		try {
-			Date parsedFormat = readFormat.parse(lastRecordDate);
-			DateFormat destDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		if (lastRecordDate != null && !lastRecordDate.isEmpty()) {
+			try {
+				Date parsedFormat = readFormat.parse(lastRecordDate);
+				DateFormat destDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-			lastRecordDate = destDateFormat.format(parsedFormat);
-		} catch (ParseException e) {
-			logger.error(
-					"Could not read last record date-formatting issues for {}",
-					lastRecordDate, e);
+				lastRecordDate = destDateFormat.format(parsedFormat);
+			} catch (ParseException e) {
+				logger.error(
+						"Could not read last record date-formatting issues for {}",
+						lastRecordDate, e);
+			}
 		}
-
 		return lastRecordDate;
+	}
+
+	/**
+	 * Request with exponential backoff.
+	 *
+	 * @param analyticsReportingService
+	 *            the analytics reporting service
+	 * @param getReport
+	 *            the get report
+	 * @param brand
+	 *            the brand
+	 * @return the gets the reports response
+	 */
+	public GetReportsResponse requestWithExponentialBackoff(
+			AnalyticsReporting analyticsReportingService,
+			GetReportsRequest getReport, Brand brand) {
+		boolean retriableError = false;
+		GetReportsResponse response = null;
+		for (int noOftries = 0; noOftries < this.ingestorConfiguration
+				.getExponentianBackoffAttemptsOnRetriableErrors(); noOftries++) {
+			try {
+				response = analyticsReportingService.reports()
+						.batchGet(getReport).setQuotaUser(brand.getAccountId())
+						.execute();
+			} catch (IOException e) {
+				// handle retriable errors
+				logger.error("Google Analytics call failed with error:", e);
+
+				if (e.getClass().getName()
+						.equalsIgnoreCase("GoogleJsonResponseException")) {
+					GoogleJsonResponseException ge = (GoogleJsonResponseException) e;
+					List<ErrorInfo> errorInfos = ge.getDetails().getErrors();
+					for (ErrorInfo errorInfo : errorInfos) {
+						if (errorInfo.getReason().equalsIgnoreCase(
+								"userRateLimitExceeded")
+								|| errorInfo.getReason().equalsIgnoreCase(
+										"rateLimitExceeded")
+								|| errorInfo.getReason().equalsIgnoreCase(
+										"quotaExceeded")
+								|| errorInfo.getMessage().contains(
+										"AnalyticsDefaultGroupUSER-100s")
+								|| errorInfo
+										.getMessage()
+										.contains(
+												"AnalyticsDefaultGroupCLIENT_PROJECT-100s")
+								|| errorInfo
+										.getMessage()
+										.contains(
+												"AnalyticsDefaultGroupCLIENT_PROJECT-100s")
+								|| errorInfo
+										.getMessage()
+										.contains(
+												"AnalyticsDefaultGroupCLIENT_PROJECT-100s")
+								|| errorInfo
+										.getMessage()
+										.contains(
+												"AnalyticsDefaultGroupCLIENT_PROJECT-100s")) {
+							retriableError = true;
+						}
+					}
+				}
+
+				if (retriableError) {
+					try {
+						logger.info("Applying Retrying logic-Exponential Backoff");
+						Thread.sleep((long) (Math.pow(2, noOftries) * 1000 + Math
+								.random() * 1000));
+					} catch (InterruptedException e1) {
+						logger.error(
+								"Google Analytics call retry attemp, sleep interrupted:",
+								e1);
+					}
+				} else {
+					logger.info("NOT Applying Retrying logic-Exponential Backoff. Probably not a retriable error?");
+					break;
+				}
+			}
+		}
+		return response;
 	}
 
 	/**
 	 * The main method.
 	 *
-	 * @param args the arguments
+	 * @param args
+	 *            the arguments
 	 */
 	public static void main(String[] args) {
 

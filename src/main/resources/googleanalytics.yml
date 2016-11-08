@@ -26,10 +26,11 @@ clientSecretResourceConfiguration:
 
     
 ingestorConfiguration:
+  exponentianBackoffAttemptsOnRetriableErrors: 5
   historicStartDate: 2005-01-01
   historicEndDate: today
   samplingLevel: LARGE
-  sleepBetweenRequestsInMillis: 1000 
+  sleepBetweenRequestsInMillis: 500 
   views:
   - All Web Site Data
   - All Mobile App Data

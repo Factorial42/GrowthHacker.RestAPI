@@ -9,6 +9,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class IngestorConfiguration {
 
+	@JsonProperty("exponentianBackoffAttemptsOnRetriableErrors")
+	@NotEmpty
+	public Integer exponentianBackoffAttemptsOnRetriableErrors;
+	
 	@JsonProperty("historicStartDate")
 	@NotEmpty
 	private String historicStartDate;
@@ -33,6 +37,13 @@ public class IngestorConfiguration {
 	@NotEmpty
 	private List<Report> reports = Collections.emptyList();
 
+	/**
+	 * @return the exponentianBackoffAttemptsOnRetriableErrors
+	 */
+	public Integer getExponentianBackoffAttemptsOnRetriableErrors() {
+		return exponentianBackoffAttemptsOnRetriableErrors;
+	}
+	
 	/**
 	 * @return the historicStartDate
 	 */
