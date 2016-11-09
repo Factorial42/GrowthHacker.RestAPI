@@ -474,8 +474,9 @@ public class GoogleAnalyticsResource {
 	private static List<JsonObject> printResponse(GetReportsResponse response) {
 		List<JsonObject> results = new ArrayList<>();
 		JsonObject resultNode = new JsonObject();
-		for (com.google.api.services.analyticsreporting.v4.model.Report report : response
-				.getReports()) {
+		for (com.google.api.services.analyticsreporting.v4.model.Report report : (response != null) ? response
+				.getReports()
+				: new ArrayList<com.google.api.services.analyticsreporting.v4.model.Report>()) {
 			ColumnHeader header = report.getColumnHeader();
 			List<String> dimensionHeaders = header.getDimensions();
 			List<MetricHeaderEntry> metricHeaders = header.getMetricHeader()
@@ -624,9 +625,11 @@ public class GoogleAnalyticsResource {
 			GetReportsRequest getReport, Brand brand) {
 		boolean retriableError = false;
 		GetReportsResponse response = null;
-		for (int noOftries = 0; noOftries < this.ingestorConfiguration
+		int noOftries = 0;
+		for (noOftries = 0; noOftries < this.ingestorConfiguration
 				.getExponentianBackoffAttemptsOnRetriableErrors(); noOftries++) {
 			try {
+				retriableError = false;
 				response = analyticsReportingService.reports()
 						.batchGet(getReport).setQuotaUser(brand.getAccountId())
 						.execute();
@@ -634,8 +637,10 @@ public class GoogleAnalyticsResource {
 				// handle retriable errors
 				logger.error("Google Analytics call failed with error:", e);
 
-				if (e.getClass().getName()
-						.equalsIgnoreCase("GoogleJsonResponseException")) {
+				if (e.getClass()
+						.getName()
+						.equalsIgnoreCase(
+								"com.google.api.client.googleapis.json.GoogleJsonResponseException")) {
 					GoogleJsonResponseException ge = (GoogleJsonResponseException) e;
 					List<ErrorInfo> errorInfos = ge.getDetails().getErrors();
 					for (ErrorInfo errorInfo : errorInfos) {
@@ -683,6 +688,9 @@ public class GoogleAnalyticsResource {
 					break;
 				}
 			}
+		}
+		if (noOftries > 4 && retriableError) {
+			logger.error("Failed to get Data after {} tries", noOftries);
 		}
 		return response;
 	}
