@@ -386,8 +386,8 @@ public class GoogleAnalyticsResource {
 						if ((tempResults = printResponse(response)) != null) {
 							results.addAll(tempResults);
 						}
-						nextPageToken = response.getReports().get(0)
-								.getNextPageToken();
+						nextPageToken = response!=null?response.getReports().get(0)
+								.getNextPageToken():null;
 						success = persistReports(results, report,
 								brand.getAccountId(), view.getViewId(),
 								view.getViewNativeId());
