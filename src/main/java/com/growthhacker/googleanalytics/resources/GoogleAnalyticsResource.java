@@ -643,7 +643,7 @@ public class GoogleAnalyticsResource {
 			try {
 				retriableError = false;
 				response = analyticsReportingService.reports()
-						.batchGet(getReport).setQuotaUser(brand.getAccountId())
+						.batchGet(getReport).setQuotaUser(brand.getAccountId()+Math.random())
 						.execute();
 			} catch (IOException e) {
 				// handle retriable errors
