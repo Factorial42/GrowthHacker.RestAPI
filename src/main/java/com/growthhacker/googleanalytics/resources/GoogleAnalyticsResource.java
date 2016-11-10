@@ -370,8 +370,8 @@ public class GoogleAnalyticsResource {
 						numberOfRowsCreated += results.size();
 					}
 					results = new ArrayList<>();
-					String nextPageToken = response.getReports().get(0)
-							.getNextPageToken();
+					String nextPageToken = response!=null?response.getReports().get(0)
+							.getNextPageToken():null;
 					while (nextPageToken != null
 							&& Integer.valueOf(nextPageToken) != null
 							&& Integer.valueOf(nextPageToken) > 0) {
@@ -390,6 +390,13 @@ public class GoogleAnalyticsResource {
 							numberOfRowsCreated += results.size();
 						}
 						results = new ArrayList<>();
+						try {
+							Thread.sleep(ingestorConfiguration
+									.getSleepBetweenRequestsInMillis());
+						} catch (InterruptedException e) {
+							logger.error("Sleep between requests interrupted",
+									e);
+						}
 					}
 				}
 			}
