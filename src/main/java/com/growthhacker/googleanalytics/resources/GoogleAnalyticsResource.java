@@ -243,10 +243,15 @@ public class GoogleAnalyticsResource {
 
 			// update Brand record in ES
 			try {
+				Thread.sleep(ingestorConfiguration
+						.getSleepBetweenRequestsInMillis());
+				
 				UpdateResponse updateResponse = esClient
 						.prepareUpdate(BRAND_INDEX, BRAND_TYPE,
 								brand.getAccountId())
 						.setDoc(this.mapper
+								.writeValueAsString(brandIngestRunUpdateView))
+						.setUpsert(this.mapper
 								.writeValueAsString(brandIngestRunUpdateView))
 						.execute().get();
 			} catch (InterruptedException | ExecutionException e) {
