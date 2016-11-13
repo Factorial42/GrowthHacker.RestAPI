@@ -27,6 +27,7 @@
 		<elasticsearch.version>2.4.0</elasticsearch.version>
 		<dropwizard.swagger.version>0.7.0</dropwizard.swagger.version>
 		<joda.time.version>2.8.2</joda.time.version>
+		<sqs-dropwizard.version>1.0.4</sqs-dropwizard.version>
 		<mainClass>com.growthhacker.googleanalytics.GoogleAnalyticsApplication</mainClass>
 	</properties>
 
@@ -69,10 +70,10 @@
 			<artifactId>google-api-services-analyticsreporting</artifactId>
 			<version>${google.api.services.analyticsreporting.version}</version>
 			<exclusions>
-			 <exclusion>
-			     <groupId>com.google.guava</groupId>
-			     <artifactId>guava-jdk5</artifactId>
-			 </exclusion>
+				<exclusion>
+					<groupId>com.google.guava</groupId>
+					<artifactId>guava-jdk5</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -99,6 +100,11 @@
 			<groupId>joda-time</groupId>
 			<artifactId>joda-time</artifactId>
 			<version>${joda.time.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.interact</groupId>
+			<artifactId>sqs-dropwizard</artifactId>
+			<version>${sqs-dropwizard.version}</version>
 		</dependency>
 	</dependencies>
 

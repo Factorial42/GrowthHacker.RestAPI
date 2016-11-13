@@ -1,5 +1,7 @@
 package com.growthhacker.googleanalytics.resources;
 
+import io.interact.sqsdw.MessageHandler;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
@@ -35,6 +37,7 @@ import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.services.sqs.model.Message;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
@@ -62,9 +65,10 @@ import com.google.gson.JsonObject;
 import com.growthhacker.googleanalytics.GoogleAnalyticsConfiguration;
 import com.growthhacker.googleanalytics.IngestorConfiguration;
 import com.growthhacker.googleanalytics.Report;
-import com.growthhacker.googleanalytics.util.Brand;
-import com.growthhacker.googleanalytics.util.Brand.BrandIngestRunUpdateView;
-import com.growthhacker.googleanalytics.util.View;
+import com.growthhacker.googleanalytics.model.Brand;
+import com.growthhacker.googleanalytics.model.Brand.BrandIngestRunUpdateView;
+import com.growthhacker.googleanalytics.model.IngestRequestMessage;
+import com.growthhacker.googleanalytics.model.View;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -73,7 +77,7 @@ import com.growthhacker.googleanalytics.util.View;
 @Path("/googleAnalytics")
 @Produces({ MediaType.APPLICATION_JSON })
 @Consumes({ MediaType.APPLICATION_JSON })
-public class GoogleAnalyticsResource {
+public class GoogleAnalyticsResource extends MessageHandler {
 
 	/** The Constant logger. */
 	final static Logger logger = LoggerFactory
@@ -131,18 +135,15 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Instantiates a new google analytics resource.
 	 *
-	 * @param client
-	 *            the client
-	 * @param configuration
-	 *            the configuration
-	 * @throws IOException
-	 *             Signals that an I/O exception has occurred.
-	 * @throws GeneralSecurityException
-	 *             the general security exception
+	 * @param client the client
+	 * @param configuration the configuration
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 * @throws GeneralSecurityException the general security exception
 	 */
 	public GoogleAnalyticsResource(Client client,
 			GoogleAnalyticsConfiguration configuration) throws IOException,
 			GeneralSecurityException {
+		super("GHBrandIngestType");
 		this.mapper = new ObjectMapper();
 		this.esClient = client;
 
@@ -166,17 +167,70 @@ public class GoogleAnalyticsResource {
 				.setJsonFactory(JSON_FACTORY).build();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * io.interact.sqsdw.MessageHandler#handle(com.amazonaws.services.sqs.model
+	 * .Message)
+	 */
+	public void handle(Message message) {
+		try {
+			logger.info("Message received:",
+					this.mapper.writeValueAsString(message));
+			IngestRequestMessage ingestRequestMessage = null;
+			Brand brand = null;
+			String startDate = null, endDate = null;
+			Boolean forceStartDate = false;
+
+			String body = message.getBody();
+			if (body == null && body.isEmpty()) {
+				logger.error("Bad Message, missing body", brand.toString());
+				return;
+			}
+			ingestRequestMessage = mapper.readValue(body,
+					IngestRequestMessage.class);
+			if (ingestRequestMessage == null) {
+				logger.error("Bad Request, null message");
+			}
+			brand = ingestRequestMessage.getBrand();
+			if (brand == null) {
+				logger.error("Bad Request, null brand");
+			}
+			if (brand.getAccountId() == null && brand.getAccountId().isEmpty()) {
+				logger.error("Bad Request, missing account_id",
+						brand.toString());
+				return;
+			}
+
+			if (ingestRequestMessage.getForceStartDate() != null) {
+				forceStartDate = ingestRequestMessage.getForceStartDate();
+			}
+			if (forceStartDate
+					&& (ingestRequestMessage.getStartDate() == null || ingestRequestMessage
+							.getStartDate().isEmpty())) {
+				logger.error("Bad Request, missing startDate");
+				return;
+			}
+			startDate = ingestRequestMessage.getStartDate();
+			endDate = ingestRequestMessage.getEndDate();
+			BrandIngestRunUpdateView brandIngestRunUpdateView = handleIngestRequest(
+					brand, startDate, endDate, forceStartDate);
+			logger.debug("Processed message:"
+					+ brandIngestRunUpdateView.toString());
+
+		} catch (IOException e) {
+			logger.error("Could not process message:", message, e);
+		}
+	}
+
 	/**
 	 * Ingest data.
 	 *
-	 * @param brand
-	 *            the brand
-	 * @param startDate
-	 *            the start date
-	 * @param endDate
-	 *            the end date
-	 * @param forceStartDate
-	 *            the force start date
+	 * @param brand the brand
+	 * @param startDate the start date
+	 * @param endDate the end date
+	 * @param forceStartDate the force start date
 	 * @return the response
 	 */
 	@POST
@@ -193,6 +247,37 @@ public class GoogleAnalyticsResource {
 		if (forceStartDate && (startDate == null || startDate.isEmpty()))
 			return Response.status(Response.Status.BAD_REQUEST)
 					.entity(START_DATE_REQUIRED).build();
+
+		BrandIngestRunUpdateView brandIngestRunUpdateView = null;
+
+		try {
+			brandIngestRunUpdateView = handleIngestRequest(brand, startDate,
+					endDate, forceStartDate);
+		} catch (IOException e) {
+			logger.error("Error in getting Data from Google Analytics:", e);
+			brandIngestRunUpdateView.setAccountRecordStatus(STATUS_FAILURE);
+			return Response
+					.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error in getting Data from Google Analytics:"
+							+ e.getMessage()).build();
+		}
+		return Response.status(Response.Status.OK)
+				.entity(brandIngestRunUpdateView).build();
+	}
+
+	/**
+	 * Handle ingest request.
+	 *
+	 * @param brand the brand
+	 * @param startDate the start date
+	 * @param endDate the end date
+	 * @param forceStartDate the force start date
+	 * @return the brand ingest run update view
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
+	private BrandIngestRunUpdateView handleIngestRequest(Brand brand,
+			String startDate, String endDate, Boolean forceStartDate)
+			throws IOException {
 		BrandIngestRunUpdateView brandIngestRunUpdateView = brand.new BrandIngestRunUpdateView();
 		brandIngestRunUpdateView.setAccountId(brand.getAccountId());
 		brandIngestRunUpdateView.setAccountOauthtoken(brand
@@ -205,88 +290,74 @@ public class GoogleAnalyticsResource {
 		AnalyticsReporting analyticsReportingService = new AnalyticsReporting.Builder(
 				httpTransport, JSON_FACTORY, this.credential)
 				.setApplicationName(APPLICATION_NAME).build();
-		try {
-			brandIngestRunUpdateView
-					.setAccountRecordLastrefreshStartTimestamp(Instant.now()
-							.toEpochMilli());
-			// get data and persist
-			Integer numberOfRowsCreated = getAndPersistReports(
-					analyticsReportingService, brand, startDate, endDate,
-					forceStartDate);
-			brandIngestRunUpdateView
-					.setAccountRecordLastrefreshEndTimestamp(Instant.now()
-							.toEpochMilli());
-			brandIngestRunUpdateView.setUpdatedAt(String.valueOf(Instant.now()
-					.toEpochMilli()));
-			brandIngestRunUpdateView.setTimestamp(String.valueOf(Instant.now()
-					.toEpochMilli()));
-			brandIngestRunUpdateView
-					.setAccountRecordLastrefresh(numberOfRowsCreated);
 
-			brandIngestRunUpdateView.setAccountRecordStatus(STATUS_SUCCESS);
-			// update oauth token
-			if (brandIngestRunUpdateView.getAccountOauthtoken() != null
-					&& this.credential.getAccessToken() != null
-					&& !brandIngestRunUpdateView.getAccountOauthtoken().equals(
-							this.credential.getAccessToken())) {
-				brandIngestRunUpdateView.setAccountOauthtoken(this.credential
-						.getAccessToken());
-			}
-			if (brandIngestRunUpdateView.getAccountRefreshOauthtoken() != null
-					&& this.credential.getRefreshToken() != null
-					&& !brandIngestRunUpdateView.getAccountRefreshOauthtoken()
-							.equals(this.credential.getRefreshToken())) {
-				brandIngestRunUpdateView
-						.setAccountRefreshOauthtoken(this.credential
-								.getRefreshToken());
-			}
+		brandIngestRunUpdateView
+				.setAccountRecordLastrefreshStartTimestamp(Instant.now()
+						.toEpochMilli());
+		// get data and persist
+		Integer numberOfRowsCreated = getAndPersistReports(
+				analyticsReportingService, brand, startDate, endDate,
+				forceStartDate);
+		brandIngestRunUpdateView
+				.setAccountRecordLastrefreshEndTimestamp(Instant.now()
+						.toEpochMilli());
+		brandIngestRunUpdateView.setUpdatedAt(String.valueOf(Instant.now()
+				.toEpochMilli()));
+		brandIngestRunUpdateView.setTimestamp(String.valueOf(Instant.now()
+				.toEpochMilli()));
+		brandIngestRunUpdateView
+				.setAccountRecordLastrefresh(numberOfRowsCreated);
 
-			// update Brand record in ES
-			try {
-				Thread.sleep(ingestorConfiguration
-						.getSleepBetweenRequestsInMillis());
-				
-				UpdateResponse updateResponse = esClient
-						.prepareUpdate(BRAND_INDEX, BRAND_TYPE,
-								brand.getAccountId())
-						.setDoc(this.mapper
-								.writeValueAsString(brandIngestRunUpdateView))
-						.setUpsert(this.mapper
-								.writeValueAsString(brandIngestRunUpdateView))
-						.execute().get();
-			} catch (InterruptedException | ExecutionException e) {
-				logger.error("Could not update BrandId:{} for Ingest status:",
-						brand.getAccountId(), e);
-			}
-
-			return Response.status(Response.Status.OK)
-					.entity(brandIngestRunUpdateView).build();
-		} catch (IOException e) {
-			logger.error("Error in getting Data from Google Analytics:", e);
-			brandIngestRunUpdateView.setAccountRecordStatus(STATUS_FAILURE);
-			return Response
-					.status(Response.Status.INTERNAL_SERVER_ERROR)
-					.entity("Error in getting Data from Google Analytics:"
-							+ e.getMessage()).build();
+		brandIngestRunUpdateView.setAccountRecordStatus(STATUS_SUCCESS);
+		// update oauth token
+		if (brandIngestRunUpdateView.getAccountOauthtoken() != null
+				&& this.credential.getAccessToken() != null
+				&& !brandIngestRunUpdateView.getAccountOauthtoken().equals(
+						this.credential.getAccessToken())) {
+			brandIngestRunUpdateView.setAccountOauthtoken(this.credential
+					.getAccessToken());
 		}
+		if (brandIngestRunUpdateView.getAccountRefreshOauthtoken() != null
+				&& this.credential.getRefreshToken() != null
+				&& !brandIngestRunUpdateView.getAccountRefreshOauthtoken()
+						.equals(this.credential.getRefreshToken())) {
+			brandIngestRunUpdateView
+					.setAccountRefreshOauthtoken(this.credential
+							.getRefreshToken());
+		}
+
+		// update Brand record in ES
+		try {
+			Thread.sleep(ingestorConfiguration
+					.getSleepBetweenRequestsInMillis());
+
+			UpdateResponse updateResponse = esClient
+					.prepareUpdate(BRAND_INDEX, BRAND_TYPE,
+							brand.getAccountId())
+					.setDoc(this.mapper
+							.writeValueAsString(brandIngestRunUpdateView))
+					.setUpsert(
+							this.mapper
+									.writeValueAsString(brandIngestRunUpdateView))
+					.execute().get();
+		} catch (InterruptedException | ExecutionException e) {
+			logger.error("Could not update BrandId:{} for Ingest status:",
+					brand.getAccountId(), e);
+		}
+
+		return brandIngestRunUpdateView;
 	}
 
 	/**
 	 * Gets the and persist reports.
 	 *
-	 * @param analyticsReportingService
-	 *            the analytics reporting service
-	 * @param brand
-	 *            the brand
-	 * @param startDate
-	 *            the start date
-	 * @param endDate
-	 *            the end date
-	 * @param forceStartDate
-	 *            the force start date
+	 * @param analyticsReportingService the analytics reporting service
+	 * @param brand the brand
+	 * @param startDate the start date
+	 * @param endDate the end date
+	 * @param forceStartDate the force start date
 	 * @return the and persist reports
-	 * @throws IOException
-	 *             Signals that an I/O exception has occurred.
+	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private Integer getAndPersistReports(
 			AnalyticsReporting analyticsReportingService, Brand brand,
@@ -357,7 +428,8 @@ public class GoogleAnalyticsResource {
 				GetReportsResponse response = requestWithExponentialBackoff(
 						analyticsReportingService, getReport, brand);
 
-				if ((tempResults = printResponse(response)) != null) {
+				if (response != null
+						&& (tempResults = printResponse(response)) != null) {
 					if (report.getEnrichGeo() != null
 							&& report.getEnrichGeo().getEnable()) {
 						enrichGeoData(tempResults, report);
@@ -375,8 +447,8 @@ public class GoogleAnalyticsResource {
 						numberOfRowsCreated += results.size();
 					}
 					results = new ArrayList<>();
-					String nextPageToken = response!=null?response.getReports().get(0)
-							.getNextPageToken():null;
+					String nextPageToken = response != null ? response
+							.getReports().get(0).getNextPageToken() : null;
 					while (nextPageToken != null
 							&& Integer.valueOf(nextPageToken) != null
 							&& Integer.valueOf(nextPageToken) > 0) {
@@ -386,8 +458,8 @@ public class GoogleAnalyticsResource {
 						if ((tempResults = printResponse(response)) != null) {
 							results.addAll(tempResults);
 						}
-						nextPageToken = response!=null?response.getReports().get(0)
-								.getNextPageToken():null;
+						nextPageToken = response != null ? response
+								.getReports().get(0).getNextPageToken() : null;
 						success = persistReports(results, report,
 								brand.getAccountId(), view.getViewId(),
 								view.getViewNativeId());
@@ -412,16 +484,11 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Persist reports.
 	 *
-	 * @param results
-	 *            the results
-	 * @param report
-	 *            the report
-	 * @param accountId
-	 *            the account id
-	 * @param viewId
-	 *            the view id
-	 * @param viewNativeId
-	 *            the view native id
+	 * @param results the results
+	 * @param report the report
+	 * @param accountId the account id
+	 * @param viewId the view id
+	 * @param viewNativeId the view native id
 	 * @return true, if successful
 	 */
 	private boolean persistReports(List<JsonObject> results, Report report,
@@ -479,8 +546,7 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Prints the response.
 	 *
-	 * @param response
-	 *            the response
+	 * @param response the response
 	 * @return the list
 	 */
 	private static List<JsonObject> printResponse(GetReportsResponse response) {
@@ -526,10 +592,8 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Enrich geo data.
 	 *
-	 * @param tempResults
-	 *            the temp results
-	 * @param report
-	 *            the report
+	 * @param tempResults the temp results
+	 * @param report the report
 	 */
 	private static void enrichGeoData(List<JsonObject> tempResults,
 			Report report) {
@@ -557,10 +621,8 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Adds the computed metrics.
 	 *
-	 * @param tempResults
-	 *            the temp results
-	 * @param report
-	 *            the report
+	 * @param tempResults the temp results
+	 * @param report the report
 	 */
 	private void addComputedMetrics(List<JsonObject> tempResults, Report report) {
 		JsonElement sessionsCount = null, transactionsCount = null;
@@ -582,10 +644,8 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Find last record date.
 	 *
-	 * @param index
-	 *            the index
-	 * @param type
-	 *            the type
+	 * @param index the index
+	 * @param type the type
 	 * @return the string
 	 */
 	private String findLastRecordDate(String index, String type) {
@@ -624,12 +684,9 @@ public class GoogleAnalyticsResource {
 	/**
 	 * Request with exponential backoff.
 	 *
-	 * @param analyticsReportingService
-	 *            the analytics reporting service
-	 * @param getReport
-	 *            the get report
-	 * @param brand
-	 *            the brand
+	 * @param analyticsReportingService the analytics reporting service
+	 * @param getReport the get report
+	 * @param brand the brand
 	 * @return the gets the reports response
 	 */
 	public GetReportsResponse requestWithExponentialBackoff(
@@ -643,7 +700,8 @@ public class GoogleAnalyticsResource {
 			try {
 				retriableError = false;
 				response = analyticsReportingService.reports()
-						.batchGet(getReport).setQuotaUser(brand.getAccountId()+Math.random())
+						.batchGet(getReport)
+						.setQuotaUser(brand.getAccountId() + Math.random())
 						.execute();
 			} catch (IOException e) {
 				// handle retriable errors
@@ -710,8 +768,7 @@ public class GoogleAnalyticsResource {
 	/**
 	 * The main method.
 	 *
-	 * @param args
-	 *            the arguments
+	 * @param args the arguments
 	 */
 	public static void main(String[] args) {
 

@@ -5,10 +5,18 @@ import io.dropwizard.elasticsearch.health.EsClusterHealthCheck;
 import io.dropwizard.elasticsearch.managed.ManagedEsClient;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.interact.sqsdw.MessageHandler;
+import io.interact.sqsdw.SqsListener;
+import io.interact.sqsdw.SqsListenerHealthCheck;
+import io.interact.sqsdw.SqsListenerImpl;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.HashSet;
+import java.util.Set;
 
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.growthhacker.googleanalytics.resources.BrandIngestHandlerImpl;
 import com.growthhacker.googleanalytics.resources.GoogleAnalyticsResource;
 
 public class GoogleAnalyticsApplication extends
@@ -37,16 +45,28 @@ public class GoogleAnalyticsApplication extends
 		final ManagedEsClient managedClient = new ManagedEsClient(
 				configuration.getEsConfiguration());
 		environment.lifecycle().manage(managedClient);
-
-		// health check
-		environment.healthChecks().register("ES cluster health",
-				new EsClusterHealthCheck(managedClient.getClient()));
-
+		
 		// Create Resources
 		final GoogleAnalyticsResource googleAnalyticsResource = new GoogleAnalyticsResource(
 				managedClient.getClient(), configuration);
 
 		environment.jersey().register(googleAnalyticsResource);
+		
+		// AWS sqs message handler
+		final AmazonSQS sqs = configuration.getSqsFactory().build(environment);
+		final MessageHandler handler = googleAnalyticsResource;
+		final Set<MessageHandler> handlers = new HashSet<>();
+		handlers.add(googleAnalyticsResource);
+
+		final SqsListener sqsListener = new SqsListenerImpl(sqs,
+				configuration.getSqsListenQueueUrl(), handlers);
+		environment.lifecycle().manage(sqsListener);
+
+		// health check
+		environment.healthChecks().register("ES cluster health",
+				new EsClusterHealthCheck(managedClient.getClient()));
+		environment.healthChecks().register("SqsListener",
+				new SqsListenerHealthCheck(sqsListener));
 	}
 
 }

@@ -1,4 +1,4 @@
-package com.growthhacker.googleanalytics.util;
+package com.growthhacker.googleanalytics.model;
 
 import java.util.ArrayList;
 import java.util.List;

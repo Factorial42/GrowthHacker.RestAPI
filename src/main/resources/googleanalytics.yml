@@ -24,7 +24,14 @@ clientSecretResourceConfiguration:
     - urn:ietf:wg:oauth:2.0:oob
     - http://localhost
 
-    
+# Amazon SQS settings.
+sqsFactory:
+  awsAccessKeyId: AKIAJEARA5TKTUQAMSCA
+  awsSecretKey: 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
+  awsRegion: us-west-2
+
+sqsListenQueueUrl: https://sqs.us-west-2.amazonaws.com/837567902566/GH-GAIngestQueue
+  
 ingestorConfiguration:
   exponentianBackoffAttemptsOnRetriableErrors: 5
   historicStartDate: 2005-01-01
@@ -210,6 +217,8 @@ logging:
     org.elasticsearch.plugins: INFO
     org.dozer: INFO
     org.apache.commons: INFO
+    org.apache.http: INFO
+    com.amazonaws: INFO
   appenders:
     - type: file
       # The file to which current statements will be logged.

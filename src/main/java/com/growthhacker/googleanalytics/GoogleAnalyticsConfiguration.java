@@ -4,6 +4,7 @@ import io.dropwizard.Configuration;
 import io.dropwizard.elasticsearch.config.EsConfiguration;
 import io.dropwizard.validation.ValidationMethod;
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration;
+import io.interact.sqsdw.SqsFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +18,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 
 public class GoogleAnalyticsConfiguration extends Configuration {
 
@@ -34,6 +34,15 @@ public class GoogleAnalyticsConfiguration extends Configuration {
 
 	@JsonProperty("ingestorConfiguration")
 	public IngestorConfiguration ingestorConfiguration;
+
+	@Valid
+    @NotNull
+    @JsonProperty
+    private SqsFactory sqsFactory;
+
+    @NotNull
+    @JsonProperty
+    private String sqsListenQueueUrl;
 
 	/**
 	 * Gets the es configuration.
@@ -64,6 +73,20 @@ public class GoogleAnalyticsConfiguration extends Configuration {
 	 */
 	public IngestorConfiguration getIngestorConfiguration() {
 		return ingestorConfiguration;
+	}
+
+	/**
+	 * @return the sqsFactory
+	 */
+	public SqsFactory getSqsFactory() {
+		return sqsFactory;
+	}
+
+	/**
+	 * @return the sqsListenQueueUrl
+	 */
+	public String getSqsListenQueueUrl() {
+		return sqsListenQueueUrl;
 	}
 
 	public class ClientSecretResourceConfiguration {

@@ -1,4 +1,4 @@
-package com.growthhacker.googleanalytics.util;
+package com.growthhacker.googleanalytics.model;
 
 import java.util.HashMap;
 import java.util.Map;
