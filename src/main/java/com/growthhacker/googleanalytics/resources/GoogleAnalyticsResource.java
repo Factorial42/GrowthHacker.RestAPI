@@ -427,9 +427,9 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				// Call the batchGet method.
 				GetReportsResponse response = requestWithExponentialBackoff(
 						analyticsReportingService, getReport, brand);
-
 				if (response != null
 						&& (tempResults = printResponse(response)) != null) {
+					logger.info("Google Analytics query: {} and Response: {}", getReport.toString(), response.toString());
 					if (report.getEnrichGeo() != null
 							&& report.getEnrichGeo().getEnable()) {
 						enrichGeoData(tempResults, report);
@@ -445,6 +445,13 @@ public class GoogleAnalyticsResource extends MessageHandler {
 							view.getViewNativeId());
 					if (success) {
 						numberOfRowsCreated += results.size();
+						try {
+							Thread.sleep(ingestorConfiguration
+									.getSleepBetweenRequestsInMillis());
+						} catch (InterruptedException e) {
+							logger.error("Sleep between requests interrupted",
+									e);
+						}
 					}
 					results = new ArrayList<>();
 					String nextPageToken = response != null ? response
@@ -705,7 +712,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 						.execute();
 			} catch (IOException e) {
 				// handle retriable errors
-				logger.error("Google Analytics call failed with error:", e);
+				logger.error("Google Analytics call failed with error for brandId:{}", brand.getId(), e);
 
 				if (e.getClass()
 						.getName()
