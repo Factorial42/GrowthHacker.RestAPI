@@ -25,6 +25,15 @@
             }
           }
         },
+        "viewNativeId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
         "propertyId": {
           "type": "string",
           "fields": {

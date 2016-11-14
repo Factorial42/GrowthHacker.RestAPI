@@ -386,7 +386,9 @@ public class GoogleAnalyticsResource extends MessageHandler {
 					// change start date based on last record of each report
 					// type
 					String lastRecordDateHour = findLastRecordDate(
-							report.getWriteToIndex(), report.getWriteToType());
+							report.getWriteToIndex(), report.getWriteToType(),
+							brand.getAccountId(), view.getId(),
+							view.getViewNativeId());
 					if (lastRecordDateHour != null
 							&& !lastRecordDateHour.isEmpty()) {
 						dateRange.setStartDate(lastRecordDateHour);
@@ -653,11 +655,18 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	 *
 	 * @param index the index
 	 * @param type the type
+	 * @param viewNativeId 
+	 * @param viewId 
+	 * @param accountId 
 	 * @return the string
 	 */
-	private String findLastRecordDate(String index, String type) {
+	private String findLastRecordDate(String index, String type,
+			String accountId, String viewId, String viewNativeId) {
 		Map<String, Object> templateParams = new HashMap<>();
 		templateParams.put("type", type);
+		templateParams.put("accountId", accountId);
+		templateParams.put("viewId", viewId);
+		templateParams.put("viewNativeId", viewNativeId);
 
 		Template template = new Template(ANALYTICS_SEARCH_TEMPLATE,
 				ScriptService.ScriptType.INDEXED,

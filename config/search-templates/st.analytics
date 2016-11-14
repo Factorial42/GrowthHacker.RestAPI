@@ -3,8 +3,29 @@
     \"version\": true,
     \"size\": 0,
     \"query\": {
-      \"match\": {
-        \"_type\": \"{{ type }}\"
+      \"bool\": {
+        \"must\": [
+          {
+            \"match\": {
+              \"_type\": \"{{type}}\"
+            }
+          },
+          {
+            \"match\": {
+              \"accountId.raw\": \"{{accountId}}\"
+            }
+          },
+          {
+            \"match\": {
+              \"viewId.raw\": \"{{viewId}}\"
+            }
+          },
+          {
+            \"match\": {
+              \"viewNativeId\": \"{{viewNativeId}}\"
+            }
+          }
+        ]
       }
     },
     \"aggs\": {
