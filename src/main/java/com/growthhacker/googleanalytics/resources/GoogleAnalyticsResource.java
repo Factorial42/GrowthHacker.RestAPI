@@ -753,10 +753,17 @@ public class GoogleAnalyticsResource extends MessageHandler {
 								|| errorInfo
 										.getMessage()
 										.contains(
-												"AnalyticsDefaultGroupCLIENT_PROJECT-100s")) {
+												"AnalyticsDefaultGroupCLIENT_PROJECT-100s")
+								|| errorInfo
+								.getMessage()
+								.contains(
+										"The service is currently unavailable.")) {
 							retriableError = true;
 						}
 					}
+				}
+				if(e.getClass().getName().equalsIgnoreCase("java.net.SocketTimeoutException")) {
+					retriableError = true;
 				}
 
 				if (retriableError) {
@@ -773,6 +780,8 @@ public class GoogleAnalyticsResource extends MessageHandler {
 					logger.info("NOT Applying Retrying logic-Exponential Backoff. Probably not a retriable error?");
 					break;
 				}
+			} catch (Exception e) {
+				logger.error("Google Analytics call failed with error for brandId:{}", brand.getId(), e);
 			}
 		}
 		if (noOftries > 4 && retriableError) {
