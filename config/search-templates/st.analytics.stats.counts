@@ -1,0 +1,31 @@
+{
+  "template": "{
+    \"version\": true,
+    \"size\": 0,
+    \"query\": {
+      \"bool\": {
+        \"must\": [
+          {
+            \"match_all\": {}
+          }
+          {{#accountId}}
+          ,
+          {
+            \"match\": {
+              \"accountId.raw\": \"{{accountId}}\"
+            }
+          }
+          {{/accountId}}
+        ]
+      }
+    },
+    \"aggs\": {
+      \"stats.counts\": {
+        \"terms\": {
+          \"field\": \"_type\",
+          \"size\": 0
+        }
+      }
+    }
+  }"
+}
