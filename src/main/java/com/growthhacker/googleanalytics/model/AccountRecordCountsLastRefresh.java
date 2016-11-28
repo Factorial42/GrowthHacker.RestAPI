@@ -1,5 +1,6 @@
 package com.growthhacker.googleanalytics.model;
 
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -8,7 +9,7 @@ public class AccountRecordCountsLastRefresh {
 
 	/** The account record counts lastrefresh. */
 	@JsonProperty("account_record_counts_lastrefresh_totals")
-	private Map<String, Integer> accountRecordCountsLastrefreshTotals;
+	private List<Map<String, Object>> accountRecordCountsLastrefreshTotals;
 
 	/** The account record counts status. */
 	@JsonProperty("account_record_counts_lastrefresh_status")
@@ -31,7 +32,7 @@ public class AccountRecordCountsLastRefresh {
 	/**
 	 * @return the accountRecordCountsLastrefreshTotals
 	 */
-	public Map<String, Integer> getAccountRecordCountsLastrefreshTotals() {
+	public List<Map<String,Object>> getAccountRecordCountsLastrefreshTotals() {
 		return accountRecordCountsLastrefreshTotals;
 	}
 
@@ -39,7 +40,7 @@ public class AccountRecordCountsLastRefresh {
 	 * @param accountRecordCountsLastrefreshTotals the accountRecordCountsLastrefreshTotals to set
 	 */
 	public void setAccountRecordCountsLastrefreshTotals(
-			Map<String, Integer> accountRecordCountsLastrefreshTotals) {
+			List<Map<String, Object>> accountRecordCountsLastrefreshTotals) {
 		this.accountRecordCountsLastrefreshTotals = accountRecordCountsLastrefreshTotals;
 	}
 

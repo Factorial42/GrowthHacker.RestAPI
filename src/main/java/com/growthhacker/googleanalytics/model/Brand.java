@@ -1004,7 +1004,7 @@ public class Brand {
 
 	public static void updateBrandCountsRunUpdateViewWithTimestamp(
 			BrandCountsRunUpdateView brandCountsRunUpdateView,
-			Map<String, Integer> numberOfRowsCreated,
+			List<Map<String,Object>> numberOfRowsCreated,
 			GoogleCredential credential, String startDate, String endDate) {
 		AccountRecordCountsLastRefresh accountRecordCountsLastRefresh = brandCountsRunUpdateView
 				.getAccountRecordCountsLastRefresh();

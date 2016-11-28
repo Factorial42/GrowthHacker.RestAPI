@@ -102,10 +102,14 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	/** The analytics search template. */
 	private static String ANALYTICS_SEARCH_TEMPLATE = "st.analytics";
 
+	private static String VIEW_ID = "view_id";
 	private static String TOTAL_COUNT = "ingested_total";
 	private static String REPORTS_ROWS_COUNT = "report_rows_count";
 	private static String REPORTS_ROWS_DATA = "report_rows_data";
 	private static Integer REPORT_REQUEST_PAGE_SIZE = 10000;
+	
+	private static List<String> INGESTION_VIEW_RULES = new ArrayList<String>(
+			Arrays.asList("All Web Site Data", "Master", "Default", "Raw Data", "All Mobile App Data"));;
 
 	/** The Constant JSON_FACTORY. */
 	private static final JsonFactory JSON_FACTORY = GsonFactory
@@ -323,13 +327,20 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				APPLICATION_NAME).build();
 
 		// get data and persist
-		Map<String, Integer> numberOfRowsCreated = getAndPersistReports(
+		List<Map<String, Object>> numberOfRowsCreated = getAndPersistReports(
 				analyticsReportingService, brand, startDate, endDate,
 				forceStartDate, false);
 
+		int totalRows = 0;
+		for (Map<String, Object> viewCounts : numberOfRowsCreated) {
+			for (Entry<String, Object> viewCount : viewCounts.entrySet()) {
+				if (viewCount.getKey().equalsIgnoreCase(TOTAL_COUNT)) {
+					totalRows += (int) viewCount.getValue();
+				}
+			}
+		}
 		Brand.updateBrandIngestRunUpdateViewWithTimestamp(
-				brandIngestRunUpdateView, numberOfRowsCreated.get(TOTAL_COUNT),
-				credential);
+				brandIngestRunUpdateView, totalRows, credential);
 
 		// update Brand record in ES
 		try {
@@ -366,7 +377,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				APPLICATION_NAME).build();
 
 		// get data and persist
-		Map<String, Integer> numberOfRowsCreated = getAndPersistReports(
+		List<Map<String, Object>> numberOfRowsCreated = getAndPersistReports(
 				analyticsReportingService, brand, startDate, endDate,
 				forceStartDate, true);
 
@@ -413,14 +424,15 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	 * @throws IOException
 	 *             Signals that an I/O exception has occurred.
 	 */
-	private Map<String, Integer> getAndPersistReports(
+	private List<Map<String, Object>> getAndPersistReports(
 			AnalyticsReporting analyticsReportingService, Brand brand,
 			String startDate, String endDate, Boolean forceStartDate,
 			Boolean justCounts) throws IOException {
-		int numberOfRowsCreated = 0;
+		int numberOfRowsCreated = 0, numberOfRowsCreatedForView = 0;
 		List<JsonObject> results = new ArrayList<>();
 		List<Map<String, Object>> tempResults = null;
-		Map<String, Integer> counts = new HashMap<>();
+		List<Map<String, Object>> counts = new ArrayList<>();
+		Map<String, Object> viewSpecificCounts = null;
 		DateRange dateRange = new DateRange();
 		dateRange
 				.setStartDate((startDate == null || startDate.isEmpty()) ? ingestorConfiguration
@@ -430,144 +442,158 @@ public class GoogleAnalyticsResource extends MessageHandler {
 						.getHistoricEndDate() : endDate);
 		List<String> views = ingestorConfiguration.getViews();
 
-		for (View view : brand.getViews()) {
-			if (!views.contains(view.getViewName())) {
-				continue;
+		View viewToIngest = null;
+		// if jsut one view, use it
+		if (brand.getViews().size() == 0) {
+			return counts;
+		} else if (brand.getViews().size() == 1) {
+			viewToIngest = brand.getViews().get(0);
+		} else {
+			for (View view : brand.getViews()) {
+				if(isViewToIngest(view)) {
+					viewToIngest = view;
+					break;
+				};
+			}
+		}
+		viewSpecificCounts = new HashMap<>();
+		viewSpecificCounts.put(VIEW_ID, viewToIngest.getId());
+		numberOfRowsCreatedForView = 0;
+
+		// for the viewToIngest, get all reports configured
+		for (Report report : ingestorConfiguration.getReports()) {
+			if (!forceStartDate) {
+				// change start date based on last record of each report
+				// type
+				String lastRecordDateHour = findLastRecordDate(
+						report.getWriteToIndex(), report.getWriteToType(),
+						brand.getAccountId(), viewToIngest.getId(),
+						viewToIngest.getViewNativeId());
+				if (lastRecordDateHour != null && !lastRecordDateHour.isEmpty()) {
+					dateRange.setStartDate(lastRecordDateHour);
+				}
 			}
 
-			// for each view, get all reports configured
-			for (Report report : ingestorConfiguration.getReports()) {
-				if (!forceStartDate) {
-					// change start date based on last record of each report
-					// type
-					String lastRecordDateHour = findLastRecordDate(
-							report.getWriteToIndex(), report.getWriteToType(),
-							brand.getAccountId(), view.getId(),
-							view.getViewNativeId());
-					if (lastRecordDateHour != null
-							&& !lastRecordDateHour.isEmpty()) {
-						dateRange.setStartDate(lastRecordDateHour);
-					}
-				}
+			ReportRequest request = new ReportRequest().setDateRanges(
+					Arrays.asList(dateRange)).setSamplingLevel(
+					ingestorConfiguration.getSamplingLevel());
+			List<Dimension> dimensions = new ArrayList<>();
+			List<Metric> metrics = new ArrayList<>();
+			List<String> computedMetrics = new ArrayList<>();
+			results = new ArrayList<>();
+			for (String dimensionName : report.getDimensions()) {
+				dimensions.add(new Dimension().setName(dimensionName));
+			}
+			for (String metricName : report.getMetrics()) {
+				metrics.add(new Metric().setExpression(metricName));
+			}
+			for (String computedMetricName : report.getComputedMetrics()) {
+				computedMetrics.add(computedMetricName);
+			}
 
-				ReportRequest request = new ReportRequest().setDateRanges(
-						Arrays.asList(dateRange)).setSamplingLevel(
-						ingestorConfiguration.getSamplingLevel());
-				List<Dimension> dimensions = new ArrayList<>();
-				List<Metric> metrics = new ArrayList<>();
-				List<String> computedMetrics = new ArrayList<>();
-				results = new ArrayList<>();
-				for (String dimensionName : report.getDimensions()) {
-					dimensions.add(new Dimension().setName(dimensionName));
-				}
-				for (String metricName : report.getMetrics()) {
-					metrics.add(new Metric().setExpression(metricName));
-				}
-				for (String computedMetricName : report.getComputedMetrics()) {
-					computedMetrics.add(computedMetricName);
-				}
+			// the same set of dimensions and metrics are called for all
+			// views. so
+			// set 'em once before looping viewids
+			request.setDimensions(dimensions);
+			request.setMetrics(metrics);
+			request.setViewId(viewToIngest.getViewId());
+			if (justCounts) {
+				request.setPageSize(1);
+			} else {
+				request.setPageSize(REPORT_REQUEST_PAGE_SIZE);
+			}
 
-				// the same set of dimensions and metrics are called for all
-				// views. so
-				// set 'em once before looping viewids
-				request.setDimensions(dimensions);
-				request.setMetrics(metrics);
-				request.setViewId(view.getViewId());
+			ArrayList<ReportRequest> requests = new ArrayList<ReportRequest>();
+			requests.add(request);
+
+			// Create the GetReportsRequest object.
+			GetReportsRequest getReport = new GetReportsRequest()
+					.setReportRequests(requests);
+
+			// Call the batchGet method.
+			GetReportsResponse response = requestWithExponentialBackoff(
+					analyticsReportingService, getReport, brand);
+			if (response != null
+					&& (tempResults = parseResponse(response)) != null) {
+				logger.info("Google Analytics query: {} and Response: {}",
+						getReport.toString(), response.toString());
+				int rowsCount = tempResults.get(0) != null ? (int) tempResults
+						.get(0).get(REPORTS_ROWS_COUNT) : 0;
+				List<JsonObject> rowsList = tempResults.get(0) != null ? (ArrayList<JsonObject>) tempResults
+						.get(0).get(REPORTS_ROWS_DATA)
+						: new ArrayList<JsonObject>();
 				if (justCounts) {
-					request.setPageSize(1);
+					viewSpecificCounts.put(
+							StringUtil.camelCaseToUnderscore(report.getName())
+									+ "_total", rowsCount);
 				} else {
-					request.setPageSize(REPORT_REQUEST_PAGE_SIZE);
-				}
+					if (report.getEnrichGeo() != null
+							&& report.getEnrichGeo().getEnable()) {
+						enrichGeoData(rowsList, report);
+					}
+					if (report.getComputedMetrics() != null
+							&& report.getComputedMetrics().size() > 0) {
+						addComputedMetrics(rowsList, report);
+					}
+					results.addAll(rowsList);
 
-				ArrayList<ReportRequest> requests = new ArrayList<ReportRequest>();
-				requests.add(request);
-
-				// Create the GetReportsRequest object.
-				GetReportsRequest getReport = new GetReportsRequest()
-						.setReportRequests(requests);
-
-				// Call the batchGet method.
-				GetReportsResponse response = requestWithExponentialBackoff(
-						analyticsReportingService, getReport, brand);
-				if (response != null
-						&& (tempResults = parseResponse(response)) != null) {
-					logger.info("Google Analytics query: {} and Response: {}",
-							getReport.toString(), response.toString());
-					int rowsCount = tempResults.get(0) != null ? (int) tempResults
-							.get(0).get(REPORTS_ROWS_COUNT) : 0;
-					List<JsonObject> rowsList = tempResults.get(0) != null ? (ArrayList<JsonObject>) tempResults
-							.get(0).get(REPORTS_ROWS_DATA)
-							: new ArrayList<JsonObject>();
-					if (justCounts) {
-						counts.put(
-								StringUtil.camelCaseToUnderscore(report
-										.getName()) + "_total", rowsCount);
-					} else {
-						if (report.getEnrichGeo() != null
-								&& report.getEnrichGeo().getEnable()) {
-							enrichGeoData(rowsList, report);
+					boolean success = persistReports(results, report,
+							brand.getAccountId(), viewToIngest.getViewId(),
+							viewToIngest.getViewNativeId());
+					if (success) {
+						numberOfRowsCreated += results.size();
+						numberOfRowsCreatedForView += results.size();
+						try {
+							Thread.sleep(ingestorConfiguration
+									.getSleepBetweenRequestsInMillis());
+						} catch (InterruptedException e) {
+							logger.error("Sleep between requests interrupted",
+									e);
 						}
-						if (report.getComputedMetrics() != null
-								&& report.getComputedMetrics().size() > 0) {
-							addComputedMetrics(rowsList, report);
+					}
+					results = new ArrayList<>();
+					String nextPageToken = response != null ? response
+							.getReports().get(0).getNextPageToken() : null;
+					while (nextPageToken != null
+							&& Integer.valueOf(nextPageToken) != null
+							&& Integer.valueOf(nextPageToken) > 0) {
+						rowsCount = 0;
+						rowsList = new ArrayList<>();
+						request.setPageToken(nextPageToken);
+						response = requestWithExponentialBackoff(
+								analyticsReportingService, getReport, brand);
+						if ((tempResults = parseResponse(response)) != null) {
+							rowsCount = tempResults.get(0) != null ? (int) tempResults
+									.get(0).get(REPORTS_ROWS_COUNT) : 0;
+							rowsList = tempResults.get(0) != null ? (ArrayList<JsonObject>) tempResults
+									.get(0).get(REPORTS_ROWS_DATA)
+									: new ArrayList<JsonObject>();
+							results.addAll(rowsList);
 						}
-						results.addAll(rowsList);
-
-						boolean success = persistReports(results, report,
-								brand.getAccountId(), view.getViewId(),
-								view.getViewNativeId());
+						nextPageToken = response != null ? response
+								.getReports().get(0).getNextPageToken() : null;
+						success = persistReports(results, report,
+								brand.getAccountId(), viewToIngest.getViewId(),
+								viewToIngest.getViewNativeId());
 						if (success) {
 							numberOfRowsCreated += results.size();
-							try {
-								Thread.sleep(ingestorConfiguration
-										.getSleepBetweenRequestsInMillis());
-							} catch (InterruptedException e) {
-								logger.error(
-										"Sleep between requests interrupted", e);
-							}
+							numberOfRowsCreatedForView += results.size();
 						}
 						results = new ArrayList<>();
-						String nextPageToken = response != null ? response
-								.getReports().get(0).getNextPageToken() : null;
-						while (nextPageToken != null
-								&& Integer.valueOf(nextPageToken) != null
-								&& Integer.valueOf(nextPageToken) > 0) {
-							rowsCount = 0;
-							rowsList = new ArrayList<>();
-							request.setPageToken(nextPageToken);
-							response = requestWithExponentialBackoff(
-									analyticsReportingService, getReport, brand);
-							if ((tempResults = parseResponse(response)) != null) {
-								rowsCount = tempResults.get(0) != null ? (int) tempResults
-										.get(0).get(REPORTS_ROWS_COUNT) : 0;
-								rowsList = tempResults.get(0) != null ? (ArrayList<JsonObject>) tempResults
-										.get(0).get(REPORTS_ROWS_DATA)
-										: new ArrayList<JsonObject>();
-								results.addAll(rowsList);
-							}
-							nextPageToken = response != null ? response
-									.getReports().get(0).getNextPageToken()
-									: null;
-							success = persistReports(results, report,
-									brand.getAccountId(), view.getViewId(),
-									view.getViewNativeId());
-							if (success) {
-								numberOfRowsCreated += results.size();
-							}
-							results = new ArrayList<>();
-							try {
-								Thread.sleep(ingestorConfiguration
-										.getSleepBetweenRequestsInMillis());
-							} catch (InterruptedException e) {
-								logger.error(
-										"Sleep between requests interrupted", e);
-							}
+						try {
+							Thread.sleep(ingestorConfiguration
+									.getSleepBetweenRequestsInMillis());
+						} catch (InterruptedException e) {
+							logger.error("Sleep between requests interrupted",
+									e);
 						}
 					}
 				}
 			}
 		}
-		counts.put(TOTAL_COUNT, numberOfRowsCreated);
+		viewSpecificCounts.put(TOTAL_COUNT, numberOfRowsCreatedForView);
+		counts.add(viewSpecificCounts);
+
 		return counts;
 	}
 
@@ -914,6 +940,15 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				.setRefreshToken(brand.getAccountRefreshOauthtoken());
 	}
 
+	private static Boolean isViewToIngest(View view) {
+		for (String viewSequence : INGESTION_VIEW_RULES) {
+			if (view.getViewName().toLowerCase().contains(viewSequence.toLowerCase())) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	/**
 	 * The main method.
 	 *

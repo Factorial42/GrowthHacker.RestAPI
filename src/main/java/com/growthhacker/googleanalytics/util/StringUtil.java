@@ -104,6 +104,8 @@ public class StringUtil {
 
 		System.out.println(writeFormat.format(readFormat.parse(Instant.now()
 				.toString())));
+		
+		System.out.println(("RAW All Web Site Data").toLowerCase().contains(("All Web Site data").toLowerCase()));
 
 	}
 }
