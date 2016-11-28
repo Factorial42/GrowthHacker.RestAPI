@@ -7,7 +7,7 @@ server:
 
 esConfiguration:
   nodeClient: false
-  servers: [localhost]
+  servers: [52.37.72.190]
   clusterName: elasticsearch
   settings:
     node.data: false

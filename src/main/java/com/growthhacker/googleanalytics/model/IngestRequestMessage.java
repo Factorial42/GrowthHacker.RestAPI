@@ -25,6 +25,9 @@ public class IngestRequestMessage {
 	@JsonProperty("forceStartDate")
 	private Boolean forceStartDate;
 
+	@JsonProperty("justCounts")
+	private Boolean justCounts;
+
 	/**
 	 * @return the brand
 	 */
@@ -84,5 +87,19 @@ public class IngestRequestMessage {
 	 */
 	public void setForceStartDate(Boolean forceStartDate) {
 		this.forceStartDate = forceStartDate;
+	}
+
+	/**
+	 * @return the justCounts
+	 */
+	public Boolean getJustCounts() {
+		return justCounts;
+	}
+
+	/**
+	 * @param justCounts the justCounts to set
+	 */
+	public void setJustCounts(Boolean justCounts) {
+		this.justCounts = justCounts;
 	}
 }
