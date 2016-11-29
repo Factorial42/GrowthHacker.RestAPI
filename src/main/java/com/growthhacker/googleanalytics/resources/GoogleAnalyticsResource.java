@@ -103,6 +103,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	private static String ANALYTICS_SEARCH_TEMPLATE = "st.analytics";
 
 	private static String VIEW_ID = "view_id";
+	private static String VIEW_NATIVE_ID = "view_id";
 	private static String TOTAL_COUNT = "ingested_total";
 	private static String REPORTS_ROWS_COUNT = "report_rows_count";
 	private static String REPORTS_ROWS_DATA = "report_rows_data";
@@ -457,7 +458,8 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			}
 		}
 		viewSpecificCounts = new HashMap<>();
-		viewSpecificCounts.put(VIEW_ID, viewToIngest.getId());
+		viewSpecificCounts.put(VIEW_ID, viewToIngest.getViewId());
+		viewSpecificCounts.put(VIEW_NATIVE_ID, viewToIngest.getViewNativeId());
 		numberOfRowsCreatedForView = 0;
 
 		// for the viewToIngest, get all reports configured
