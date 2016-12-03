@@ -1,8 +1,11 @@
 package com.growthhacker.googleanalytics.resources;
 
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import io.interact.sqsdw.MessageHandler;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -14,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.Consumes;
@@ -25,19 +29,32 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.script.Template;
 import org.elasticsearch.script.mustache.MustacheScriptEngineService;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
+import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.search.sort.SortParseElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.sqs.model.Message;
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
@@ -108,9 +125,10 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	private static String REPORTS_ROWS_COUNT = "report_rows_count";
 	private static String REPORTS_ROWS_DATA = "report_rows_data";
 	private static Integer REPORT_REQUEST_PAGE_SIZE = 10000;
-	
+
 	private static List<String> INGESTION_VIEW_RULES = new ArrayList<String>(
-			Arrays.asList("All Web Site Data", "Master", "Default", "Raw Data", "All Mobile App Data"));;
+			Arrays.asList("All Web Site Data", "Master", "Default", "Raw Data",
+					"All Mobile App Data"));;
 
 	/** The Constant JSON_FACTORY. */
 	private static final JsonFactory JSON_FACTORY = GsonFactory
@@ -132,7 +150,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	private GoogleClientSecrets googleClientSecrets;
 
 	/** The mapper. */
-	private ObjectMapper mapper;
+	private static ObjectMapper mapper;
 
 	/**
 	 * Instantiates a new google analytics resource.
@@ -451,10 +469,11 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			viewToIngest = brand.getViews().get(0);
 		} else {
 			for (View view : brand.getViews()) {
-				if(isViewToIngest(view)) {
+				if (isViewToIngest(view)) {
 					viewToIngest = view;
 					break;
-				};
+				}
+				;
 			}
 		}
 		viewSpecificCounts = new HashMap<>();
@@ -620,10 +639,13 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		logger.info("attempting to persist {} records for report {} ",
 				results.size(), report.getName());
 		int persistedRecordsCount = 0;
+		BulkRequestBuilder bulkIndexRequestBuilder = esClient.prepareBulk();
+
 		for (JsonObject result : results) {
 			// prefix each element and trim "ga:" with the respective
 			// stat's prefix
 			JsonObject prefixedObject = new JsonObject();
+
 			for (Entry<String, JsonElement> element : result.entrySet()) {
 				if (!element.getKey().equalsIgnoreCase("ga:dateHour")) {
 					prefixedObject.add(report.getPrefix()
@@ -649,20 +671,34 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				logger.error("Could not parse dateHour:"
 						+ prefixedObject.getAsString());
 			}
-			// index on ES
-			try {
-				esClient.prepareIndex(report.getWriteToIndex(),
-						report.getWriteToType())
-						.setSource(prefixedObject.toString()).execute().get();
-				persistedRecordsCount++;
-			} catch (InterruptedException | ExecutionException e) {
-				logger.error(
-						"Could not persist stat:"
-								+ prefixedObject.getAsString(), e);
-			}
+			// add ID
+			String dimensionValueSuffix = getDimensionValuesSuffix(prefixedObject,
+					report.getDimensions(), report.getPrefix());
+			String id = generateID(accountId, viewId, report.getPrefix(), dimensionValueSuffix);
+			// add to bulk request
+			bulkIndexRequestBuilder.add(esClient.prepareIndex(
+					report.getWriteToIndex(), report.getWriteToType(), id)
+					.setSource(prefixedObject.toString()));
+
 		}
-		logger.info("Persisted {} records for report {}",
-				persistedRecordsCount, report.getName());
+
+		BulkResponse bulkResponse = bulkIndexRequestBuilder.get();
+		if (bulkResponse.hasFailures()) {
+			for (BulkItemResponse bulkItemResponse : bulkResponse.getItems()) {
+				if (bulkItemResponse.isFailed()) {
+					logger.error("Could not persist stat with ID: {}",
+							bulkItemResponse.getId());
+					logger.error("Error Response: {}",
+							bulkItemResponse.toString());
+				} else {
+					persistedRecordsCount++;
+				}
+			}
+		} else {
+			persistedRecordsCount = bulkResponse.getItems().length;
+		}
+		logger.info("Persisted {} records for {}", persistedRecordsCount,
+				report.getName());
 		return true;
 	}
 
@@ -858,14 +894,15 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				// handle retriable errors
 				logger.error(
 						"Google Analytics call failed with error for brandId:{}",
-						brand.getId(), e);
+						brand.getAccountId(), e);
 
 				if (e.getClass()
 						.getName()
 						.equalsIgnoreCase(
 								"com.google.api.client.googleapis.json.GoogleJsonResponseException")) {
 					GoogleJsonResponseException ge = (GoogleJsonResponseException) e;
-					List<ErrorInfo> errorInfos = ge.getDetails().getErrors();
+					List<ErrorInfo> errorInfos = ge.getDetails() != null ? ge
+							.getDetails().getErrors() : new ArrayList<>();
 					for (ErrorInfo errorInfo : errorInfos) {
 						if (errorInfo.getReason().equalsIgnoreCase(
 								"userRateLimitExceeded")
@@ -921,7 +958,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			} catch (Exception e) {
 				logger.error(
 						"Google Analytics call failed with error for brandId:{}",
-						brand.getId(), e);
+						brand.getAccountId(), e);
 			}
 		}
 		if (noOftries > 4 && retriableError) {
@@ -944,20 +981,110 @@ public class GoogleAnalyticsResource extends MessageHandler {
 
 	private static Boolean isViewToIngest(View view) {
 		for (String viewSequence : INGESTION_VIEW_RULES) {
-			if (view.getViewName().toLowerCase().contains(viewSequence.toLowerCase())) {
+			if (view.getViewName().toLowerCase()
+					.contains(viewSequence.toLowerCase())) {
 				return true;
 			}
 		}
 		return false;
 	}
-	
+
+	private static String getDimensionValuesSuffix(JsonObject jsonObject,
+			List<String> dimensions, String reportPrefix) {
+		StringBuffer dimensionValuesBuffer=new StringBuffer();
+		for (String dimension : dimensions) {
+			for (Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+				if (entry != null
+						&& entry.getKey() != null
+						&& entry.getKey()
+								.replaceAll(reportPrefix, "")
+								.equalsIgnoreCase(
+										dimension.replaceAll("ga:", ""))) {
+					dimensionValuesBuffer.append(entry.getValue().getAsString()+"_");
+					break;
+				}
+			}
+		}
+		return dimensionValuesBuffer.toString().substring(0,
+				dimensionValuesBuffer.toString().length() - 1);
+	}
+
+	private static String generateID(String... args) {
+		StringBuffer buffer = new StringBuffer();
+		for (String arg : args) {
+			buffer.append(arg + "_");
+		}
+		String id=buffer.toString().substring(0, buffer.toString().length() - 1);
+		String uuid=UUID.nameUUIDFromBytes(id.getBytes()).toString();
+		return uuid;
+	}
+
 	/**
 	 * The main method.
 	 *
 	 * @param args
 	 *            the arguments
+	 * @throws UnknownHostException
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnknownHostException {
+		int recordCount = 0;
 
+		Settings settings = Settings.settingsBuilder().build();
+		TransportClient client = TransportClient
+				.builder()
+				.build()
+				.addTransportAddress(
+						new InetSocketTransportAddress(InetAddress
+								.getByName("localhost"), 9300));
+		mapper = new ObjectMapper();
+		System.out.println(client.admin().cluster().prepareHealth().get()
+				.getStatus());
+		QueryBuilder qb = matchAllQuery();
+		Map<String, String> sessionStats = new HashMap<>();
+		List<String> missMatchedIds = new ArrayList<>();
+		SearchResponse scrollResp = client.prepareSearch("analytics")
+				.setTypes("sessionStats")
+				.addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+				.setScroll(new TimeValue(60000)).setQuery(qb).setSize(100)
+				.execute().actionGet(); // 100 hits per shard will be returned
+										// for each scroll
+		// Scroll until no hits are returned
+		while (true) {
+
+			for (SearchHit hit : scrollResp.getHits().getHits()) {
+				int hash = 7;
+				recordCount++;
+				Map<String, String> sessionStat = null;
+				try {
+					sessionStat = mapper.readValue(hit.getSourceAsString(),
+							HashMap.class);
+				} catch (JsonParseException e) {
+					e.printStackTrace();
+				} catch (JsonMappingException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+				String id = generateID("62355506", "101518515", "session_",
+						sessionStat.get("dateHour"),
+						sessionStat.get("session_sessionDurationBucket"));
+
+				String key = sessionStats.putIfAbsent(id, hit.getId());
+				if (key != null) {
+					System.out.println("ID generated for ID:" + hit.getId()
+							+ " is :" + id + " and is overwriting ID:" + key);
+				}
+			}
+			scrollResp = client.prepareSearchScroll(scrollResp.getScrollId())
+					.setScroll(new TimeValue(60000)).execute().actionGet();
+			// Break condition: No hits are returned
+			if (scrollResp.getHits().getHits().length == 0) {
+				break;
+			}
+		}
+		System.out.println("Records Count:" + recordCount);
+		System.out.println("Mapped Data Count:" + sessionStats.size());
+		System.out.println("MissMatchedIds Count:" + missMatchedIds.size());
 	}
 }

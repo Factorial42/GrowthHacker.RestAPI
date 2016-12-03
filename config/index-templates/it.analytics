@@ -646,5 +646,6 @@
     }
   },
   "aliases": {
+    "analytics": {}
   }
 }

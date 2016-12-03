@@ -7,7 +7,7 @@ server:
 
 esConfiguration:
   nodeClient: false
-  servers: [52.37.72.190]
+  servers: [localhost]
   clusterName: elasticsearch
   settings:
     node.data: false
@@ -30,7 +30,7 @@ sqsFactory:
   awsSecretKey: FKy0NvVA31o3nU4tNTbqX4dnyQ2/4BhQ25MhPEeR
   awsRegion: us-west-2
 
-sqsListenQueueUrl: https://sqs.us-west-2.amazonaws.com/837567902566/GH-GAIngestQueue_DEV
+sqsListenQueueUrl: https://sqs.us-west-2.amazonaws.com/837567902566/GH-GAIngestQueue_LOCAL
   
 ingestorConfiguration:
   exponentianBackoffAttemptsOnRetriableErrors: 5
@@ -165,8 +165,8 @@ ingestorConfiguration:
     writeToType: sessionStats
     prefix: session_
     dimensions:
-    - ga:sessionDurationBucket
     - ga:dateHour
+    - ga:sessionDurationBucket
     metrics:
     - ga:sessions
     - ga:bounces
