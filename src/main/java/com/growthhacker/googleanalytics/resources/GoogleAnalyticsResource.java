@@ -476,6 +476,9 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				;
 			}
 		}
+		if(viewToIngest==null) {
+			return counts;
+		}
 		viewSpecificCounts = new HashMap<>();
 		viewSpecificCounts.put(VIEW_ID, viewToIngest.getViewId());
 		viewSpecificCounts.put(VIEW_NATIVE_ID, viewToIngest.getViewNativeId());
@@ -1027,64 +1030,5 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	 * @throws UnknownHostException
 	 */
 	public static void main(String[] args) throws UnknownHostException {
-		int recordCount = 0;
-
-		Settings settings = Settings.settingsBuilder().build();
-		TransportClient client = TransportClient
-				.builder()
-				.build()
-				.addTransportAddress(
-						new InetSocketTransportAddress(InetAddress
-								.getByName("localhost"), 9300));
-		mapper = new ObjectMapper();
-		System.out.println(client.admin().cluster().prepareHealth().get()
-				.getStatus());
-		QueryBuilder qb = matchAllQuery();
-		Map<String, String> sessionStats = new HashMap<>();
-		List<String> missMatchedIds = new ArrayList<>();
-		SearchResponse scrollResp = client.prepareSearch("analytics")
-				.setTypes("sessionStats")
-				.addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
-				.setScroll(new TimeValue(60000)).setQuery(qb).setSize(100)
-				.execute().actionGet(); // 100 hits per shard will be returned
-										// for each scroll
-		// Scroll until no hits are returned
-		while (true) {
-
-			for (SearchHit hit : scrollResp.getHits().getHits()) {
-				int hash = 7;
-				recordCount++;
-				Map<String, String> sessionStat = null;
-				try {
-					sessionStat = mapper.readValue(hit.getSourceAsString(),
-							HashMap.class);
-				} catch (JsonParseException e) {
-					e.printStackTrace();
-				} catch (JsonMappingException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-
-				String id = generateID("62355506", "101518515", "session_",
-						sessionStat.get("dateHour"),
-						sessionStat.get("session_sessionDurationBucket"));
-
-				String key = sessionStats.putIfAbsent(id, hit.getId());
-				if (key != null) {
-					System.out.println("ID generated for ID:" + hit.getId()
-							+ " is :" + id + " and is overwriting ID:" + key);
-				}
-			}
-			scrollResp = client.prepareSearchScroll(scrollResp.getScrollId())
-					.setScroll(new TimeValue(60000)).execute().actionGet();
-			// Break condition: No hits are returned
-			if (scrollResp.getHits().getHits().length == 0) {
-				break;
-			}
-		}
-		System.out.println("Records Count:" + recordCount);
-		System.out.println("Mapped Data Count:" + sessionStats.size());
-		System.out.println("MissMatchedIds Count:" + missMatchedIds.size());
 	}
 }
