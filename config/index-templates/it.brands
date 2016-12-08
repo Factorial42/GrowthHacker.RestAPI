@@ -102,6 +102,63 @@
         "account_record_total": {
           "type": "long"
         },
+         "account_record_counts_last_refresh": {
+            "properties": {
+              "account_record_counts_lastrefresh_end_date": {
+                "type": "string"
+              },
+              "account_record_counts_lastrefresh_end_timestamp": {
+                "type": "long"
+              },
+              "account_record_counts_lastrefresh_start_date": {
+                "type": "date",
+                "format": "strict_date_optional_time||epoch_millis"
+              },
+              "account_record_counts_lastrefresh_start_timestamp": {
+                "type": "long"
+              },
+              "account_record_counts_lastrefresh_status": {
+                "type": "string"
+              },
+              "account_record_counts_lastrefresh_totals": {
+                "properties": {
+                  "ecommerce_product_report_total": {
+                    "type": "long"
+                  },
+                  "ecommerce_transaction_report_total": {
+                    "type": "long"
+                  },
+                  "event_report_total": {
+                    "type": "long"
+                  },
+                  "geo_report_total": {
+                    "type": "long"
+                  },
+                  "platform_report_total": {
+                    "type": "long"
+                  },
+                  "session_report_total": {
+                    "type": "long"
+                  },
+                  "expected_total": {
+                    "type": "long"
+                  },
+                  "traffic_source_report_total": {
+                    "type": "long"
+                  },
+                  "user_report_total": {
+                    "type": "long"
+                  },
+                  "view_id": {
+                    "type": "string"
+                  },
+                  "view_native_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
         "account_refresh_oauthtoken": {
           "type": "string",
           "fields": {
@@ -192,6 +249,15 @@
               "type": "boolean"
             },
             "view_id": {
+              "type": "string",
+              "fields": {
+                "raw": {
+                  "type": "string",
+                  "index": "not_analyzed"
+                }
+              }
+            },
+            "view_native_id": {
               "type": "string",
               "fields": {
                 "raw": {

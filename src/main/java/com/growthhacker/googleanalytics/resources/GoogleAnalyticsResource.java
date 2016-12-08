@@ -120,8 +120,8 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	private static String ANALYTICS_SEARCH_TEMPLATE = "st.analytics";
 
 	private static String VIEW_ID = "view_id";
-	private static String VIEW_NATIVE_ID = "view_id";
-	private static String TOTAL_COUNT = "ingested_total";
+	private static String VIEW_NATIVE_ID = "view_native_id";
+	private static String EXPECTED_TOTAL_COUNT = "expected_total";
 	private static String REPORTS_ROWS_COUNT = "report_rows_count";
 	private static String REPORTS_ROWS_DATA = "report_rows_data";
 	private static Integer REPORT_REQUEST_PAGE_SIZE = 10000;
@@ -353,7 +353,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		int totalRows = 0;
 		for (Map<String, Object> viewCounts : numberOfRowsCreated) {
 			for (Entry<String, Object> viewCount : viewCounts.entrySet()) {
-				if (viewCount.getKey().equalsIgnoreCase(TOTAL_COUNT)) {
+				if (viewCount.getKey().equalsIgnoreCase(EXPECTED_TOTAL_COUNT)) {
 					totalRows += (int) viewCount.getValue();
 				}
 			}
@@ -447,7 +447,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			AnalyticsReporting analyticsReportingService, Brand brand,
 			String startDate, String endDate, Boolean forceStartDate,
 			Boolean justCounts) throws IOException {
-		int numberOfRowsCreated = 0, numberOfRowsCreatedForView = 0;
+		int numberOfRowsCreated = 0, numberOfRowsExpectedForView = 0;
 		List<JsonObject> results = new ArrayList<>();
 		List<Map<String, Object>> tempResults = null;
 		List<Map<String, Object>> counts = new ArrayList<>();
@@ -482,7 +482,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		viewSpecificCounts = new HashMap<>();
 		viewSpecificCounts.put(VIEW_ID, viewToIngest.getViewId());
 		viewSpecificCounts.put(VIEW_NATIVE_ID, viewToIngest.getViewNativeId());
-		numberOfRowsCreatedForView = 0;
+		numberOfRowsExpectedForView = 0;
 
 		// for the viewToIngest, get all reports configured
 		for (Report report : ingestorConfiguration.getReports()) {
@@ -550,6 +550,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 					viewSpecificCounts.put(
 							StringUtil.camelCaseToUnderscore(report.getName())
 									+ "_total", rowsCount);
+					numberOfRowsExpectedForView += rowsCount;
 				} else {
 					if (report.getEnrichGeo() != null
 							&& report.getEnrichGeo().getEnable()) {
@@ -566,7 +567,6 @@ public class GoogleAnalyticsResource extends MessageHandler {
 							viewToIngest.getViewNativeId());
 					if (success) {
 						numberOfRowsCreated += results.size();
-						numberOfRowsCreatedForView += results.size();
 						try {
 							Thread.sleep(ingestorConfiguration
 									.getSleepBetweenRequestsInMillis());
@@ -601,7 +601,6 @@ public class GoogleAnalyticsResource extends MessageHandler {
 								viewToIngest.getViewNativeId());
 						if (success) {
 							numberOfRowsCreated += results.size();
-							numberOfRowsCreatedForView += results.size();
 						}
 						results = new ArrayList<>();
 						try {
@@ -615,7 +614,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				}
 			}
 		}
-		viewSpecificCounts.put(TOTAL_COUNT, numberOfRowsCreatedForView);
+		viewSpecificCounts.put(EXPECTED_TOTAL_COUNT, numberOfRowsExpectedForView);
 		counts.add(viewSpecificCounts);
 
 		return counts;
