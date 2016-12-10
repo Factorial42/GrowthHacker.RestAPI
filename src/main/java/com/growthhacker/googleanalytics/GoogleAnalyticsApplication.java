@@ -11,9 +11,15 @@ import io.interact.sqsdw.SqsListenerHealthCheck;
 import io.interact.sqsdw.SqsListenerImpl;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.security.GeneralSecurityException;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.growthhacker.googleanalytics.resources.GoogleAnalyticsResource;
@@ -41,13 +47,22 @@ public class GoogleAnalyticsApplication extends
 			final Environment environment) throws IOException,
 			GeneralSecurityException {
 		// Create Elasticsearch managed Client
-		final ManagedEsClient managedClient = new ManagedEsClient(
-				configuration.getEsConfiguration());
-		environment.lifecycle().manage(managedClient);
+//		final ManagedEsClient managedClient = new ManagedEsClient(
+//				configuration.getEsConfiguration());
+		Settings settings = Settings
+				.builder()
+				.put("cluster.name",
+						configuration.getEsConfiguration().getClusterName())
+				.build();
+		TransportClient client = new PreBuiltTransportClient(Settings.EMPTY)
+				.addTransportAddress(new InetSocketTransportAddress(InetAddress
+						.getByName(configuration.getEsConfiguration()
+								.getServers().get(0).getHostText()), 9300));
+//		 environment.lifecycle().manage(managedClient);
 
 		// Create Resources
 		final GoogleAnalyticsResource googleAnalyticsResource = new GoogleAnalyticsResource(
-				managedClient.getClient(), configuration);
+				client, configuration);
 
 		environment.jersey().register(googleAnalyticsResource);
 
@@ -62,10 +77,9 @@ public class GoogleAnalyticsApplication extends
 		environment.lifecycle().manage(sqsListener);
 
 		// health check
-		environment.healthChecks().register("ES cluster health",
-				new EsClusterHealthCheck(managedClient.getClient()));
+		// environment.healthChecks().register("ES cluster health",
+		// new EsClusterHealthCheck(managedClient.getClient()));
 		environment.healthChecks().register("SqsListener",
 				new SqsListenerHealthCheck(sqsListener));
 	}
-
 }

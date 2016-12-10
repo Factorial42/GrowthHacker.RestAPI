@@ -17,7 +17,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<dropwizard.version>1.0.2</dropwizard.version>
+		<dropwizard.version>1.0.5</dropwizard.version>
 		<dropwizard.elasticsearch.version>1.0.0-1</dropwizard.elasticsearch.version>
 		<google.api.services.analytics.version>v3-rev134-1.22.0</google.api.services.analytics.version>
 		<google.api.services.analyticsreporting.version>v4-rev10-1.22.0</google.api.services.analyticsreporting.version>
@@ -28,6 +28,7 @@
 		<dropwizard.swagger.version>0.7.0</dropwizard.swagger.version>
 		<joda.time.version>2.8.2</joda.time.version>
 		<sqs-dropwizard.version>1.0.4</sqs-dropwizard.version>
+		<log4j.version>2.7</log4j.version>
 		<mainClass>com.growthhacker.googleanalytics.GoogleAnalyticsApplication</mainClass>
 	</properties>
 
@@ -63,6 +64,10 @@
 					<groupId>org.elasticsearch</groupId>
 					<artifactId>elasticsearch</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.elasticsearch.client</groupId>
+					<artifactId>transport</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -97,6 +102,11 @@
 			<version>${elasticsearch.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>org.elasticsearch.client</groupId>
+			<artifactId>transport</artifactId>
+			<version>${elasticsearch.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>joda-time</groupId>
 			<artifactId>joda-time</artifactId>
 			<version>${joda.time.version}</version>
@@ -106,6 +116,16 @@
 			<artifactId>sqs-dropwizard</artifactId>
 			<version>${sqs-dropwizard.version}</version>
 		</dependency>
+		<dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
 	</dependencies>
 
 	<build>
