@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.amazonaws.services.sqs.AmazonSQS;
-import com.growthhacker.googleanalytics.resources.BrandIngestHandlerImpl;
 import com.growthhacker.googleanalytics.resources.GoogleAnalyticsResource;
 
 public class GoogleAnalyticsApplication extends
@@ -45,13 +44,13 @@ public class GoogleAnalyticsApplication extends
 		final ManagedEsClient managedClient = new ManagedEsClient(
 				configuration.getEsConfiguration());
 		environment.lifecycle().manage(managedClient);
-		
+
 		// Create Resources
 		final GoogleAnalyticsResource googleAnalyticsResource = new GoogleAnalyticsResource(
 				managedClient.getClient(), configuration);
 
 		environment.jersey().register(googleAnalyticsResource);
-		
+
 		// AWS sqs message handler
 		final AmazonSQS sqs = configuration.getSqsFactory().build(environment);
 		final MessageHandler handler = googleAnalyticsResource;

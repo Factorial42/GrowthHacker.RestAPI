@@ -1,10 +1,8 @@
 package com.growthhacker.googleanalytics.resources;
 
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import io.interact.sqsdw.MessageHandler;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
@@ -32,29 +30,22 @@ import javax.ws.rs.core.Response;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.script.ScriptService;
-import org.elasticsearch.script.Template;
-import org.elasticsearch.script.mustache.MustacheScriptEngineService;
-import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
-import org.elasticsearch.search.sort.SortOrder;
-import org.elasticsearch.search.sort.SortParseElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.sqs.model.Message;
 import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
@@ -539,7 +530,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 					analyticsReportingService, getReport, brand);
 			if (response != null
 					&& (tempResults = parseResponse(response)) != null) {
-				logger.info("Google Analytics query: {} and Response: {}",
+				logger.debug("Google Analytics query: {} and Response: {}",
 						getReport.toString(), response.toString());
 				int rowsCount = tempResults.get(0) != null ? (int) tempResults
 						.get(0).get(REPORTS_ROWS_COUNT) : 0;
@@ -836,13 +827,21 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		templateParams.put("accountId", accountId);
 		templateParams.put("viewId", viewId);
 		templateParams.put("viewNativeId", viewNativeId);
+		// use query builder instead of search template, since
+		// SearchTemplateQueryBuilder class is not found in ES 5.x
+		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+		boolQueryBuilder.must().add(QueryBuilders.matchQuery("_type", type));
+		boolQueryBuilder.must().add(QueryBuilders.matchQuery("accountId.raw", accountId));
+		boolQueryBuilder.must().add(QueryBuilders.matchQuery("viewId.raw", viewId));
+		boolQueryBuilder.must().add(QueryBuilders.matchQuery("viewNativeId.raw", viewNativeId));
 
-		Template template = new Template(ANALYTICS_SEARCH_TEMPLATE,
-				ScriptService.ScriptType.INDEXED,
-				MustacheScriptEngineService.NAME, null, templateParams);
-		SearchRequestBuilder request = esClient.prepareSearch(index)
-				.setTemplate(template);
-		SearchResponse response = request.execute().actionGet();
+		SearchResponse response = esClient
+				.prepareSearch(index)
+				.setSize(0)
+				.setQuery(boolQueryBuilder)
+				.addAggregation(
+						AggregationBuilders.max("latest_dateHour").field(
+								"dateHour")).get();
 		InternalMax maxMetric = response.getAggregations() != null ? response
 				.getAggregations().get("latest_dateHour") : null;
 

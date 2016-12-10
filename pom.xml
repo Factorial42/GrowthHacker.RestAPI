@@ -24,7 +24,7 @@
 		<google.http.client.gson.version>1.21.0</google.http.client.gson.version>
 		<google.oauth.client.java6.version>1.22.0</google.oauth.client.java6.version>
 		<google.oauth.client.jetty.version>1.22.0</google.oauth.client.jetty.version>
-		<elasticsearch.version>2.4.0</elasticsearch.version>
+		<elasticsearch.version>5.1.1</elasticsearch.version>
 		<dropwizard.swagger.version>0.7.0</dropwizard.swagger.version>
 		<joda.time.version>2.8.2</joda.time.version>
 		<sqs-dropwizard.version>1.0.4</sqs-dropwizard.version>
