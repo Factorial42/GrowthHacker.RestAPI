@@ -7,6 +7,10 @@
   "mappings": {
     "userStats": {
       "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
@@ -96,6 +100,15 @@
             }
           }
         },
+        "viewNativeId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
         "propertyId": {
           "type": "string",
           "fields": {
@@ -176,6 +189,15 @@
             }
           }
         },
+        "viewNativeId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
         "propertyId": {
           "type": "string",
           "fields": {
@@ -224,6 +246,15 @@
           }
         },
         "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewNativeId": {
           "type": "string",
           "fields": {
             "raw": {
@@ -306,6 +337,15 @@
             }
           }
         },
+        "viewNativeId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
         "propertyId": {
           "type": "string",
           "fields": {
@@ -371,6 +411,15 @@
           }
         },
         "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewNativeId": {
           "type": "string",
           "fields": {
             "raw": {
@@ -454,6 +503,15 @@
           }
         },
         "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewNativeId": {
           "type": "string",
           "fields": {
             "raw": {
@@ -588,6 +646,15 @@
           }
         },
         "viewId": {
+          "type": "string",
+          "fields": {
+            "raw": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        },
+        "viewNativeId": {
           "type": "string",
           "fields": {
             "raw": {

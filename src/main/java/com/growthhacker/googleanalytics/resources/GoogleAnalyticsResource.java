@@ -482,7 +482,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				// type
 				String lastRecordDateHour = findLastRecordDate(
 						report.getWriteToIndex(), report.getWriteToType(),
-						brand.getAccountId(), viewToIngest.getId(),
+						brand.getAccountId(), viewToIngest.getViewId(),
 						viewToIngest.getViewNativeId());
 				if (lastRecordDateHour != null && !lastRecordDateHour.isEmpty()) {
 					dateRange.setStartDate(lastRecordDateHour);
@@ -833,7 +833,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		boolQueryBuilder.must().add(QueryBuilders.matchQuery("_type", type));
 		boolQueryBuilder.must().add(QueryBuilders.matchQuery("accountId.raw", accountId));
 		boolQueryBuilder.must().add(QueryBuilders.matchQuery("viewId.raw", viewId));
-		boolQueryBuilder.must().add(QueryBuilders.matchQuery("viewNativeId.raw", viewNativeId));
+//		boolQueryBuilder.must().add(QueryBuilders.matchQuery("viewNativeId.raw", viewNativeId));
 
 		SearchResponse response = esClient
 				.prepareSearch(index)
