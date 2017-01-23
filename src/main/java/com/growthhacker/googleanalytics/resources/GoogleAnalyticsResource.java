@@ -454,7 +454,16 @@ public class GoogleAnalyticsResource extends MessageHandler {
 
 		View viewToIngest = null;
 		// if jsut one view, use it
-		if (brand.getViews().size() == 0) {
+		
+		if (StringUtil.isNotBlank(brand.getAccountDefaultProfileId())) {
+			for (View view : brand.getViews()) {
+				if (view.getViewId().equalsIgnoreCase(
+						brand.getAccountDefaultProfileId())) {
+					viewToIngest = view;
+					break;
+				}
+			}
+		} else if (brand.getViews().size() == 0) {
 			return counts;
 		} else if (brand.getViews().size() == 1) {
 			viewToIngest = brand.getViews().get(0);
@@ -464,7 +473,6 @@ public class GoogleAnalyticsResource extends MessageHandler {
 					viewToIngest = view;
 					break;
 				}
-				;
 			}
 		}
 		if(viewToIngest==null) {
