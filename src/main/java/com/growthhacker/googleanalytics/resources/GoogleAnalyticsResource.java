@@ -467,14 +467,16 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			return counts;
 		} else if (brand.getViews().size() == 1) {
 			viewToIngest = brand.getViews().get(0);
-		} else {
-			for (View view : brand.getViews()) {
-				if (isViewToIngest(view)) {
-					viewToIngest = view;
-					break;
-				}
-			}
 		}
+		// Avoid finding best view based on view names logic for now - 01-24-2017
+//		else {
+//			for (View view : brand.getViews()) {
+//				if (isViewToIngest(view)) {
+//					viewToIngest = view;
+//					break;
+//				}
+//			}
+//		}
 		if(viewToIngest==null) {
 			return counts;
 		}
