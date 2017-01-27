@@ -540,8 +540,10 @@ public class GoogleAnalyticsResource extends MessageHandler {
 					analyticsReportingService, getReport, brand);
 			if (response != null
 					&& (tempResults = parseResponse(response)) != null) {
-				logger.debug("Google Analytics query: {} and Response: {}",
-						getReport.toString(), response.toString());
+				logger.debug("Google Analytics query: {} ",
+						getReport.toString());
+				logger.trace("Google Analytics Response: {}",
+						response.toString());
 				int rowsCount = tempResults.get(0) != null ? (int) tempResults
 						.get(0).get(REPORTS_ROWS_COUNT) : 0;
 				List<JsonObject> rowsList = tempResults.get(0) != null ? (ArrayList<JsonObject>) tempResults
