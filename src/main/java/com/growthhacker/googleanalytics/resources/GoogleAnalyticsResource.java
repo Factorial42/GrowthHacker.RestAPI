@@ -1,5 +1,7 @@
 package com.growthhacker.googleanalytics.resources;
 
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import io.interact.sqsdw.MessageHandler;
 
 import java.io.IOException;
@@ -36,6 +38,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -113,6 +116,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	private static String VIEW_ID = "view_id";
 	private static String VIEW_NATIVE_ID = "view_native_id";
 	private static String EXPECTED_TOTAL_COUNT = "expected_total";
+	private static String ACTUAL_TOTAL_COUNT = "actual_total";
 	private static String REPORTS_ROWS_COUNT = "report_rows_count";
 	private static String REPORTS_ROWS_DATA = "report_rows_data";
 	private static Integer REPORT_REQUEST_PAGE_SIZE = 10000;
@@ -274,6 +278,20 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			logger.error("Error in getting Data from Google Analytics:", e);
 			brandIngestRunUpdateView
 					.setAccountRecordStatus(Brand.STATUS_FAILURE);
+			return Response
+					.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error in getting Data from Google Analytics:"
+							+ e.getMessage()).build();
+		}
+		BrandCountsRunUpdateView brandCountsRunUpdateView = null;
+
+		try {
+			startDate = ingestorConfiguration.getHistoricStartDate();
+			endDate = ingestorConfiguration.getHistoricEndDate();
+			brandCountsRunUpdateView = handleCountRequest(brand, startDate,
+					endDate, true);
+		} catch (IOException e) {
+			logger.error("Error in getting Data from Google Analytics:", e);
 			return Response
 					.status(Response.Status.INTERNAL_SERVER_ERROR)
 					.entity("Error in getting Data from Google Analytics:"
@@ -618,6 +636,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			}
 		}
 		viewSpecificCounts.put(EXPECTED_TOTAL_COUNT, numberOfRowsExpectedForView);
+		viewSpecificCounts.put(ACTUAL_TOTAL_COUNT, getActualCountOfViewData(brand.getAccountId(), viewToIngest.getViewId()));
 		counts.add(viewSpecificCounts);
 
 		return counts;
@@ -980,6 +999,19 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		return response;
 	}
 
+	private Long getActualCountOfViewData(String accountId, String viewId) {
+
+		QueryBuilder qb = boolQuery()
+				.must(matchQuery("accountId.raw", accountId))
+				.must(matchQuery("viewId.raw", viewId));
+		SearchResponse searchResponse = this.esClient
+				.prepareSearch("analytics")
+				.setQuery(qb).setSize(0).get();
+		long count = searchResponse.getHits()
+				.getTotalHits();
+		return count;
+	}
+	
 	private GoogleCredential buildCredentials(Brand brand) {
 		return new GoogleCredential.Builder()
 				.setClientSecrets(

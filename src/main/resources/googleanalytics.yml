@@ -59,6 +59,7 @@ ingestorConfiguration:
     - ga:percentNewSessions
     - ga:sessions
     - ga:newUsers
+    - ga:users
     - ga:bounceRate
     - ga:pageviewsPerSession
     - ga:avgSessionDuration
@@ -79,6 +80,9 @@ ingestorConfiguration:
     - ga:deviceCategory
     metrics:
     - ga:sessions
+    - ga:users
+    - ga:transactions
+    - ga:transactionRevenue
   - name: ecommerceTransactionReport
     writeToIndex: analytics
     writeToType: ecommerceTransactionStats
@@ -91,6 +95,9 @@ ingestorConfiguration:
     - ga:transactionRevenue
     - ga:transactionShipping
     - ga:transactionTax
+    - ga:sessions
+    - ga:users
+    - ga:transactions
   - name: ecommerceProductReport
     writeToIndex: analytics
     writeToType: ecommerceProductStats
@@ -106,6 +113,10 @@ ingestorConfiguration:
     - ga:revenuePerItem
     - ga:itemRevenue
     - ga:productRefundAmount
+    - ga:sessions
+    - ga:users
+    - ga:transactions
+    - ga:transactionRevenue
   - name: ecommercePromotionReport
     writeToIndex: analytics
     writeToType: ecommercePromotionStats
@@ -121,6 +132,10 @@ ingestorConfiguration:
     - ga:internalPromotionCTR
     - ga:internalPromotionClicks
     - ga:internalPromotionViews   
+    - ga:sessions
+    - ga:users
+    - ga:transactions
+    - ga:transactionRevenue
   - name: geoReport
     writeToIndex: analytics
     writeToType: geoStats
@@ -137,6 +152,9 @@ ingestorConfiguration:
     - ga:region
     metrics:
     - ga:sessions
+    - ga:users
+    - ga:transactions
+    - ga:transactionRevenue
   - name: adwordsReport
     writeToIndex: analytics
     writeToType: adwordsStats
@@ -174,6 +192,9 @@ ingestorConfiguration:
     - ga:sessionDuration
     - ga:avgSessionDuration
     - ga:hits
+    - ga:users
+    - ga:transactions
+    - ga:transactionRevenue
   - name: eventReport
     writeToIndex: analytics
     writeToType: eventStats
@@ -190,6 +211,10 @@ ingestorConfiguration:
     - ga:avgEventValue
     - ga:sessionsWithEvent
     - ga:eventsPerSessionWithEvent 
+    - ga:sessions
+    - ga:users
+    - ga:transactions
+    - ga:transactionRevenue
   - name: userReport
     writeToIndex: analytics
     writeToType: userStats
@@ -205,6 +230,9 @@ ingestorConfiguration:
     - ga:users
     - ga:newUsers
     - ga:percentNewSessions
+    - ga:sessions
+    - ga:transactions
+    - ga:transactionRevenue
   
 swagger:
   resourcePackage: <a comma separated string of the packages that contain your @Api annotated resources>
