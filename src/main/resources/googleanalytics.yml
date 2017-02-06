@@ -115,8 +115,6 @@ ingestorConfiguration:
     - ga:productRefundAmount
     - ga:sessions
     - ga:users
-    - ga:transactions
-    - ga:transactionRevenue
   - name: ecommercePromotionReport
     writeToIndex: analytics
     writeToType: ecommercePromotionStats
