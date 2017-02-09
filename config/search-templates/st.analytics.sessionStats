@@ -1,0 +1,38 @@
+{
+    "template": "{
+        \"size\": 0,
+        \"query\": {
+            \"bool\": {
+                \"must\": [
+                    {
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        \"aggs\": {
+            \"brands\": {
+                \"terms\": {
+                    \"field\": \"accountId.raw\",
+                    \"size\": 10
+                },
+                \"aggs\": {
+                    \"session_sessionDuration\": {
+                        \"sum\": {
+                            \"field\": \"session_sessionDuration\"
+                        }
+                    },
+                    \"session_avgSessionDuration\": {
+                        \"sum\": {
+                            \"field\": \"session_avgSessionDuration\"
+                        }
+                    }
+                }
+            }
+        }
+    }"
+}

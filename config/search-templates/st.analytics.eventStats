@@ -1,0 +1,58 @@
+{
+    "template": "{
+        \"size\": 0,
+        \"query\": {
+            \"bool\": {
+                \"must\": [
+                    {
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        \"aggs\": {
+            \"brands\": {
+                \"terms\": {
+                    \"field\": \"accountId.raw\",
+                    \"size\": 10
+                },
+                \"aggs\": {
+                    \"event_totalEvents\": {
+                        \"sum\": {
+                            \"field\": \"event_totalEvents\"
+                        }
+                    },
+                    \"event_uniqueEvents\": {
+                        \"sum\": {
+                            \"field\": \"event_uniqueEvents\"
+                        }
+                    },
+                    \"event_eventValue\": {
+                        \"sum\": {
+                            \"field\": \"event_eventValue\"
+                        }
+                    },
+                    \"event_avgEventValue\": {
+                        \"sum\": {
+                            \"field\": \"event_avgEventValue\"
+                        }
+                    },
+                    \"event_sessionsWithEvent\": {
+                        \"sum\": {
+                            \"field\": \"event_sessionsWithEvent\"
+                        }
+                    },
+                    \"event_eventsPerSessionWithEvent\": {
+                        \"sum\": {
+                            \"field\": \"event_eventsPerSessionWithEvent\"
+                        }
+                    }
+                }
+            }
+        }
+    }"
+}

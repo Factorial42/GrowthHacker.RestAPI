@@ -1,0 +1,53 @@
+{
+    "template": "{
+        \"size\": 0,
+        \"query\": {
+            \"bool\": {
+                \"must\": [
+                    {
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        \"aggs\": {
+            \"brands\": {
+                \"terms\": {
+                    \"field\": \"accountId.raw\",
+                    \"size\": 10
+                },
+                \"aggs\": {
+                    \"user_sessionCount\": {
+                        \"sum\": {
+                            \"field\": \"user_sessionCount\"
+                        }
+                    },
+                    \"user_sessionsPerUser\": {
+                        \"sum\": {
+                            \"field\": \"user_sessionsPerUser\"
+                        }
+                    },
+                    \"user_users\": {
+                        \"sum\": {
+                            \"field\": \"Float.parseFloat(doc['user_users'].value)\"
+                        }
+                    },
+                    \"user_newUsers\": {
+                        \"sum\": {
+                            \"field\": \"Float.parseFloat(doc['user_newUsers'].value)\"
+                        }
+                    },
+                    \"user_percentNewSessions\": {
+                        \"sum\": {
+                            \"field\": \"Float.parseFloat(doc['user_percentNewSessions'].value)\"
+                        }
+                    }
+                }
+            }
+        }
+    }"
+}

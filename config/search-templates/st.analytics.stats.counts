@@ -16,6 +16,22 @@
             }
           }
           {{/accountId}}
+          {{#viewId}}
+          ,
+          {
+            \"match\": {
+              \"viewId.raw\": \"{{viewId}}\"
+            }
+          }
+          {{/viewId}}
+          {{#viewNativeId}}
+          ,
+          {
+            \"match\": {
+              \"viewNativeId\": \"{{viewNativeId}}\"
+            }
+          }
+          {{/viewNativeId}}
         ]
       }
     },

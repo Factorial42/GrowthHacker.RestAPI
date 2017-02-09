@@ -1,0 +1,79 @@
+{
+    "template": "{
+        \"size\": 0,
+        \"query\": {
+            \"bool\": {
+                \"must\": [
+                    {
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        \"aggs\": {
+            \"brands\": {
+                \"terms\": {
+                    \"field\": \"accountId.raw\",
+                    \"size\": 10
+                },
+                \"aggs\": {
+                    \"trafficSource_sourceMedium\": {
+                        \"terms\": {
+                            \"field\": \"trafficSource_sourceMedium.raw\",
+                            \"size\": 10,
+                            \"order\": {
+                                \"trafficSource_sessions\": \"desc\"
+                            }
+                        },
+                        \"aggs\": {
+                            \"trafficSource_sessions\": {
+                                \"sum\": {
+                                    \"field\": \"trafficSource_sessions\"
+                                }
+                            },
+                            \"trafficSource_percentNewSessions\": {
+                                \"avg\": {
+                                    \"field\": \"trafficSource_percentNewSessions\"
+                                }
+                            },
+                            \"trafficSource_newUsers\": {
+                                \"sum\": {
+                                    \"field\": \"trafficSource_newUsers\"
+                                }
+                            },
+                            \"trafficSource_bounceRate\": {
+                                \"avg\": {
+                                    \"field\": \"trafficSource_bounceRate\"
+                                }
+                            },
+                            \"trafficSource_pageviewsPerSession\": {
+                                \"avg\": {
+                                    \"field\": \"trafficSource_pageviewsPerSession\"
+                                }
+                            },
+                            \"trafficSource_avgSessionDuration\": {
+                                \"avg\": {
+                                    \"field\": \"trafficSource_avgSessionDuration\"
+                                }
+                            },
+                            \"trafficSource_transactions\": {
+                                \"sum\": {
+                                    \"field\": \"trafficSource_transactions\"
+                                }
+                            },
+                            \"trafficSource_transactionRevenue\": {
+                                \"sum\": {
+                                    \"field\": \"trafficSource_transactionRevenue\"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }"
+}
