@@ -1,7 +1,6 @@
 package com.growthhacker.googleanalytics.resources;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 import io.interact.sqsdw.MessageHandler;
 
 import java.io.IOException;
@@ -37,12 +36,16 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,17 +227,17 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			}
 			startDate = ingestRequestMessage.getStartDate();
 			endDate = ingestRequestMessage.getEndDate();
-			if (justCounts) {
-				BrandCountsRunUpdateView brandCountsRunUpdateView = handleCountRequest(
-						brand, startDate, endDate, forceStartDate);
-				logger.debug("Processed message:"
-						+ brandCountsRunUpdateView.toString());
-			} else {
+			if (!justCounts) {
 				BrandIngestRunUpdateView brandIngestRunUpdateView = handleIngestRequest(
 						brand, startDate, endDate, forceStartDate);
 				logger.debug("Processed message:"
 						+ brandIngestRunUpdateView.toString());
 			}
+			
+			BrandCountsRunUpdateView brandCountsRunUpdateView = handleCountRequest(
+					brand, startDate, endDate, true);
+			logger.debug("Processed message:"
+					+ brandCountsRunUpdateView.toString());
 
 		} catch (IOException e) {
 			logger.error("Could not process message:", message, e);
