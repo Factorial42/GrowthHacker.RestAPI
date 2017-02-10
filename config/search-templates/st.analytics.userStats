@@ -18,7 +18,14 @@
             \"brands\": {
                 \"terms\": {
                     \"field\": \"accountId.raw\",
-                    \"size\": 10
+                    {{#accountIdsList}}
+                    \"include\":[
+                        \"{{#accountIds}}\",
+                        \"{{.}}\",
+                        \"{{/accountIds}}\"
+                    ],
+                    {{/accountIdsList}}
+                    \"size\": 400
                 },
                 \"aggs\": {
                     \"user_sessionCount\": {
@@ -33,17 +40,26 @@
                     },
                     \"user_users\": {
                         \"sum\": {
-                            \"field\": \"Float.parseFloat(doc['user_users'].value)\"
+                            \"script\": {
+                                \"inline\": \"Float.parseFloat(doc['user_users'].value)\",
+                                \"lang\": \"painless"
+                            }
                         }
                     },
                     \"user_newUsers\": {
                         \"sum\": {
-                            \"field\": \"Float.parseFloat(doc['user_newUsers'].value)\"
+                            \"script\": {
+                                \"inline\": \"Float.parseFloat(doc['user_newUsers'].value)\",
+                                \"lang\": \"painless"
+                            }
                         }
                     },
                     \"user_percentNewSessions\": {
                         \"sum\": {
-                            \"field\": \"Float.parseFloat(doc['user_percentNewSessions'].value)\"
+                            \"script\": {
+                                \"inline\": \"Float.parseFloat(doc['user_percentNewSessions'].value)\",
+                                \"lang\": \"painless"
+                            }
                         }
                     }
                 }

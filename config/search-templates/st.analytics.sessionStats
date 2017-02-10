@@ -18,7 +18,14 @@
             \"brands\": {
                 \"terms\": {
                     \"field\": \"accountId.raw\",
-                    \"size\": 10
+                    {{#accountIdsList}}
+                    \"include\":[
+                        \"{{#accountIds}}\",
+                        \"{{.}}\",
+                        \"{{/accountIds}}\"
+                    ],
+                    {{/accountIdsList}}
+                    \"size\": 400
                 },
                 \"aggs\": {
                     \"session_sessionDuration\": {
@@ -27,7 +34,7 @@
                         }
                     },
                     \"session_avgSessionDuration\": {
-                        \"sum\": {
+                        \"avg\": {
                             \"field\": \"session_avgSessionDuration\"
                         }
                     }
