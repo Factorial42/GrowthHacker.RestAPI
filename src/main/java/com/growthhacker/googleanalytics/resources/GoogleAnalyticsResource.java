@@ -464,14 +464,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		List<Map<String, Object>> tempResults = null;
 		List<Map<String, Object>> counts = new ArrayList<>();
 		Map<String, Object> viewSpecificCounts = null;
-		DateRange dateRange = new DateRange();
-		dateRange
-				.setStartDate((startDate == null || startDate.isEmpty()) ? ingestorConfiguration
-						.getHistoricStartDate() : startDate);
-		dateRange
-				.setEndDate((endDate == null || endDate.isEmpty()) ? ingestorConfiguration
-						.getHistoricEndDate() : endDate);
-		List<String> views = ingestorConfiguration.getViews();
+		DateRange dateRange = null;
 
 		View viewToIngest = null;
 		// if jsut one view, use it
@@ -508,6 +501,13 @@ public class GoogleAnalyticsResource extends MessageHandler {
 
 		// for the viewToIngest, get all reports configured
 		for (Report report : ingestorConfiguration.getReports()) {
+			dateRange = new DateRange();
+			dateRange
+					.setStartDate((startDate == null || startDate.isEmpty()) ? ingestorConfiguration
+							.getHistoricStartDate() : startDate);
+			dateRange
+					.setEndDate((endDate == null || endDate.isEmpty()) ? ingestorConfiguration
+							.getHistoricEndDate() : endDate);
 			if (!forceStartDate) {
 				// change start date based on last record of each report
 				// type
