@@ -42,7 +42,7 @@
                         \"sum\": {
                             \"script\": {
                                 \"inline\": \"Float.parseFloat(doc['user_users'].value)\",
-                                \"lang\": \"painless"
+                                \"lang\": \"painless\"
                             }
                         }
                     },
@@ -50,7 +50,7 @@
                         \"sum\": {
                             \"script\": {
                                 \"inline\": \"Float.parseFloat(doc['user_newUsers'].value)\",
-                                \"lang\": \"painless"
+                                \"lang\": \"painless\"
                             }
                         }
                     },
@@ -58,7 +58,7 @@
                         \"sum\": {
                             \"script\": {
                                 \"inline\": \"Float.parseFloat(doc['user_percentNewSessions'].value)\",
-                                \"lang\": \"painless"
+                                \"lang\": \"painless\"
                             }
                         }
                     }
