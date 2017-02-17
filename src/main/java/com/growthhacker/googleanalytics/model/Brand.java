@@ -61,6 +61,9 @@ public class Brand {
 	/** The account website url. */
 	@JsonProperty("account_website_url")
 	private String accountWebsiteUrl;
+	
+	@JsonProperty("account_ingest_status")
+	private String accountIngestStatus;
 
 	/** The account industry vertical. */
 	@JsonProperty("account_industry_vertical")
@@ -255,6 +258,20 @@ public class Brand {
 	 */
 	public String getAccountIndustryVertical() {
 		return accountIndustryVertical;
+	}
+
+	/**
+	 * @return the accountIngestStatus
+	 */
+	public String getAccountIngestStatus() {
+		return accountIngestStatus;
+	}
+
+	/**
+	 * @param accountIngestStatus the accountIngestStatus to set
+	 */
+	public void setAccountIngestStatus(String accountIngestStatus) {
+		this.accountIngestStatus = accountIngestStatus;
 	}
 
 	/**
@@ -537,6 +554,9 @@ public class Brand {
 		/** The account oauthtoken. */
 		@JsonProperty("account_oauthtoken")
 		private String accountOauthtoken;
+				
+		@JsonProperty("account_ingest_status")
+		private String accountIngestStatus;
 
 		/**
 		 * Gets the account id.
@@ -652,6 +672,20 @@ public class Brand {
 		 */
 		public void setAccountOauthtoken(String accountOauthtoken) {
 			this.accountOauthtoken = accountOauthtoken;
+		}
+
+		/**
+		 * @return the accountIngestStatus
+		 */
+		public String getAccountIngestStatus() {
+			return accountIngestStatus;
+		}
+
+		/**
+		 * @param accountIngestStatus the accountIngestStatus to set
+		 */
+		public void setAccountIngestStatus(String accountIngestStatus) {
+			this.accountIngestStatus = accountIngestStatus;
 		}
 
 		/**
@@ -882,7 +916,7 @@ public class Brand {
 	}
 
 	public static void updateBrandIngestRunUpdateViewWithTimestamp(
-			BrandIngestRunUpdateView brandIngestRunUpdateView, GoogleCredential credential) {
+			BrandIngestRunUpdateView brandIngestRunUpdateView, GoogleCredential credential, String ingestionStatus) {
 
 		brandIngestRunUpdateView
 				.setAccountRecordLastrefreshEndTimestamp(Instant.now()
@@ -893,6 +927,7 @@ public class Brand {
 				.toEpochMilli()));
 
 		brandIngestRunUpdateView.setAccountRecordStatus(STATUS_SUCCESS);
+		brandIngestRunUpdateView.setAccountIngestStatus(ingestionStatus);
 		// update oauth token
 		if (brandIngestRunUpdateView.getAccountOauthtoken() != null
 				&& credential.getAccessToken() != null

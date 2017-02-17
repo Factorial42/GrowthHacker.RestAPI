@@ -128,7 +128,12 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	private static String EXPECTED_TOTALS = "expected_totals";
 	private static String REPORTS_ROWS_COUNT = "report_rows_count";
 	private static String REPORTS_ROWS_DATA = "report_rows_data";
+	private static String ACCOUNT_INGEST_STATUS = "account_ingest_status";
 	private static Integer REPORT_REQUEST_PAGE_SIZE = 10000;
+	
+	private static enum INGESTION_STATUS  {
+		IN_PROGRESS, PROCESSED
+	}
 
 	private static List<String> INGESTION_VIEW_RULES = new ArrayList<String>(
 			Arrays.asList("All Web Site Data", "Master", "Default", "Raw Data",
@@ -354,6 +359,19 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	private BrandIngestRunUpdateView handleIngestRequest(Brand brand,
 			String startDate, String endDate, Boolean forceStartDate)
 			throws IOException {
+		// update brand ingestion status to "in progress"
+		try {
+
+			UpdateResponse updateResponse = esClient
+					.prepareUpdate(BRAND_INDEX, BRAND_TYPE,
+							brand.getAccountId())
+					.setDoc(ACCOUNT_INGEST_STATUS, INGESTION_STATUS.IN_PROGRESS)
+					.execute().get();
+		} catch (InterruptedException | ExecutionException e) {
+			logger.error("Could not update BrandId:{} for Ingest status:",
+					brand.getAccountId(), e);
+		}
+		
 		BrandIngestRunUpdateView brandIngestRunUpdateView = Brand
 				.createBrandIngestRunUpdateView(brand);
 
@@ -369,7 +387,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				forceStartDate, false);
 
 		Brand.updateBrandIngestRunUpdateViewWithTimestamp(
-				brandIngestRunUpdateView, credential);
+				brandIngestRunUpdateView, credential, INGESTION_STATUS.PROCESSED.toString());
 
 		// update Brand record in ES
 		try {
