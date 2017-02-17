@@ -7,10 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class AccountRecordCountsLastRefresh {
 
-	/** The account record counts lastrefresh. */
-	@JsonProperty("account_record_counts_lastrefresh_totals")
-	private List<Map<String, Object>> accountRecordCountsLastrefreshTotals;
-
 	/** The account record counts status. */
 	@JsonProperty("account_record_counts_lastrefresh_status")
 	private String accountRecordCountsLastrefreshStatus;
@@ -28,21 +24,6 @@ public class AccountRecordCountsLastRefresh {
 
 	@JsonProperty("account_record_counts_lastrefresh_end_date")
 	private String accountRecordCountsLastrefreshEndDate;
-
-	/**
-	 * @return the accountRecordCountsLastrefreshTotals
-	 */
-	public List<Map<String,Object>> getAccountRecordCountsLastrefreshTotals() {
-		return accountRecordCountsLastrefreshTotals;
-	}
-
-	/**
-	 * @param accountRecordCountsLastrefreshTotals the accountRecordCountsLastrefreshTotals to set
-	 */
-	public void setAccountRecordCountsLastrefreshTotals(
-			List<Map<String, Object>> accountRecordCountsLastrefreshTotals) {
-		this.accountRecordCountsLastrefreshTotals = accountRecordCountsLastrefreshTotals;
-	}
 
 	/**
 	 * @return the accountRecordCountsLastrefreshStatus

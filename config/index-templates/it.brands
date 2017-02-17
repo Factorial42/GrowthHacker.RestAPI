@@ -1,304 +1,323 @@
 {
-  "template": "brands*",
-  "settings": {
-    "number_of_shards": 1,
-    "number_of_replicas": 0
-  },
-  "mappings": {
-    "brand": {
-      "properties": {
-        "@timestamp": {
-          "type": "date",
-          "format": "strict_date_optional_time||epoch_millis"
-        },
-        "__v": {
-          "type": "long"
-        },
-        "account_created": {
-          "type": "date",
-          "format": "strict_date_optional_time||epoch_millis"
-        },
-        "account_default_profile_id": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_id": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_industry_vertical": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_ingest_status": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_name": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_native_id": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_oauthtoken": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_record_lastrefresh": {
-          "type": "long"
-        },
-        "account_record_lastrefresh_end_timestamp": {
-          "type": "long"
-        },
-        "account_record_lastrefresh_start_timestamp": {
-          "type": "long"
-        },
-        "account_record_lastrefresh_status": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_record_total": {
-          "type": "long"
-        },
-         "account_record_counts_last_refresh": {
+    "template": "brands*",
+    "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+    },
+    "mappings": {
+        "brand": {
             "properties": {
-              "account_record_counts_lastrefresh_end_date": {
-                "type": "string"
-              },
-              "account_record_counts_lastrefresh_end_timestamp": {
-                "type": "long"
-              },
-              "account_record_counts_lastrefresh_start_date": {
-                "type": "date",
-                "format": "strict_date_optional_time||epoch_millis"
-              },
-              "account_record_counts_lastrefresh_start_timestamp": {
-                "type": "long"
-              },
-              "account_record_counts_lastrefresh_status": {
-                "type": "string"
-              },
-              "account_record_counts_lastrefresh_totals": {
-                "properties": {
-                  "ecommerce_product_report_total": {
+                "@timestamp": {
+                    "type": "date",
+                    "format": "strict_date_optional_time||epoch_millis"
+                },
+                "__v": {
                     "type": "long"
-                  },
-                  "ecommerce_transaction_report_total": {
-                    "type": "long"
-                  },
-                  "event_report_total": {
-                    "type": "long"
-                  },
-                  "geo_report_total": {
-                    "type": "long"
-                  },
-                  "platform_report_total": {
-                    "type": "long"
-                  },
-                  "session_report_total": {
-                    "type": "long"
-                  },
-                  "expected_total": {
-                    "type": "long"
-                  },
-                  "traffic_source_report_total": {
-                    "type": "long"
-                  },
-                  "user_report_total": {
-                    "type": "long"
-                  },
-                  "view_id": {
-                    "type": "string"
-                  },
-                  "view_native_id": {
-                    "type": "string"
-                  }
+                },
+                "account_created": {
+                    "type": "date",
+                    "format": "strict_date_optional_time||epoch_millis"
+                },
+                "account_default_profile_id": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_id": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_industry_vertical": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_ingest_status": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_name": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_native_id": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_oauthtoken": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_record_counts_last_refresh": {
+                    "properties": {
+                        "account_record_counts_lastrefresh_end_date": {
+                            "type": "date",
+                            "format": "strict_date_optional_time||epoch_millis"
+                        },
+                        "account_record_counts_lastrefresh_end_timestamp": {
+                            "type": "date",
+                            "format": "strict_date_optional_time||epoch_millis"
+                        },
+                        "account_record_counts_lastrefresh_start_date": {
+                            "type": "date",
+                            "format": "strict_date_optional_time||epoch_millis"
+                        },
+                        "account_record_counts_lastrefresh_start_timestamp": {
+                            "type": "date",
+                            "format": "strict_date_optional_time||epoch_millis"
+                        },
+                        "account_record_counts_lastrefresh_status": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "expected_totals": {
+                    "properties": {
+                        "ecommerce_product_report_total": {
+                            "type": "long"
+                        },
+                        "ecommerce_transaction_report_total": {
+                            "type": "long"
+                        },
+                        "event_report_total": {
+                            "type": "long"
+                        },
+                        "geo_report_total": {
+                            "type": "long"
+                        },
+                        "platform_report_total": {
+                            "type": "long"
+                        },
+                        "session_report_total": {
+                            "type": "long"
+                        },
+                        "consolidated_total": {
+                            "type": "long"
+                        },
+                        "traffic_source_report_total": {
+                            "type": "long"
+                        },
+                        "user_report_total": {
+                            "type": "long"
+                        },
+                        "view_id": {
+                            "type": "string"
+                        },
+                        "view_native_id": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "actual_totals": {
+                    "properties": {
+                        "ecommerce_product_report_total": {
+                            "type": "long"
+                        },
+                        "ecommerce_transaction_report_total": {
+                            "type": "long"
+                        },
+                        "event_report_total": {
+                            "type": "long"
+                        },
+                        "geo_report_total": {
+                            "type": "long"
+                        },
+                        "platform_report_total": {
+                            "type": "long"
+                        },
+                        "session_report_total": {
+                            "type": "long"
+                        },
+                        "consolidated_total": {
+                            "type": "long"
+                        },
+                        "traffic_source_report_total": {
+                            "type": "long"
+                        },
+                        "user_report_total": {
+                            "type": "long"
+                        },
+                        "view_id": {
+                            "type": "string"
+                        },
+                        "view_native_id": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "account_refresh_oauthtoken": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_source": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_tags": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_tetherer_email": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "account_updated": {
+                    "type": "date",
+                    "format": "strict_date_optional_time||epoch_millis"
+                },
+                "account_website_url": {
+                    "type": "string",
+                    "fields": {
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "createdAt": {
+                    "type": "date",
+                    "format": "strict_date_optional_time||epoch_millis"
+                },
+                "updatedAt": {
+                    "type": "date",
+                    "format": "strict_date_optional_time||epoch_millis"
+                },
+                "views": {
+                    "properties": {
+                        "_id": {
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                }
+                            }
+                        },
+                        "view_channel_type": {
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                }
+                            }
+                        },
+                        "view_currency": {
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                }
+                            }
+                        },
+                        "view_ecommerce_tracking": {
+                            "type": "boolean"
+                        },
+                        "view_id": {
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                }
+                            }
+                        },
+                        "view_native_id": {
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                }
+                            }
+                        },
+                        "view_name": {
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                }
+                            }
+                        },
+                        "view_tethered_user_email": {
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                }
+                            }
+                        },
+                        "view_timezone": {
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                }
+                            }
+                        }
+                    }
                 }
-              }
             }
-          },
-        "account_refresh_oauthtoken": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_source": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_tags": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_tetherer_email": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "account_updated": {
-          "type": "date",
-          "format": "strict_date_optional_time||epoch_millis"
-        },
-        "account_website_url": {
-          "type": "string",
-          "fields": {
-            "raw": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        },
-        "createdAt": {
-          "type": "date",
-          "format": "strict_date_optional_time||epoch_millis"
-        },
-        "updatedAt": {
-          "type": "date",
-          "format": "strict_date_optional_time||epoch_millis"
-        },
-        "views": {
-          "properties": {
-            "_id": {
-              "type": "string",
-              "fields": {
-                "raw": {
-                  "type": "string",
-                  "index": "not_analyzed"
-                }
-              }
-            },
-            "view_channel_type": {
-              "type": "string",
-              "fields": {
-                "raw": {
-                  "type": "string",
-                  "index": "not_analyzed"
-                }
-              }
-            },
-            "view_currency": {
-              "type": "string",
-              "fields": {
-                "raw": {
-                  "type": "string",
-                  "index": "not_analyzed"
-                }
-              }
-            },
-            "view_ecommerce_tracking": {
-              "type": "boolean"
-            },
-            "view_id": {
-              "type": "string",
-              "fields": {
-                "raw": {
-                  "type": "string",
-                  "index": "not_analyzed"
-                }
-              }
-            },
-            "view_native_id": {
-              "type": "string",
-              "fields": {
-                "raw": {
-                  "type": "string",
-                  "index": "not_analyzed"
-                }
-              }
-            },
-            "view_name": {
-              "type": "string",
-              "fields": {
-                "raw": {
-                  "type": "string",
-                  "index": "not_analyzed"
-                }
-              }
-            },
-            "view_tethered_user_email": {
-              "type": "string",
-              "fields": {
-                "raw": {
-                  "type": "string",
-                  "index": "not_analyzed"
-                }
-              }
-            },
-            "view_timezone": {
-              "type": "string",
-              "fields": {
-                "raw": {
-                  "type": "string",
-                  "index": "not_analyzed"
-                }
-              }
-            }
-          }
         }
-      }
+    },
+    "aliases": {
+        "brands": {}
     }
-  },
-  "aliases": {
-    "brands": {}
-  }
 }

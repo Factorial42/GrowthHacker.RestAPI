@@ -98,28 +98,14 @@ public class Brand {
 	@JsonProperty("views")
 	private List<View> views = new ArrayList<View>();
 
-	/** The account record lastrefresh. */
-	@JsonProperty("account_record_lastrefresh")
-	private Integer accountRecordLastrefresh;
-
-	/** The account record total. */
-	@JsonProperty("account_record_total")
-	private Integer accountRecordTotal;
-
-	/** The account record status. */
-	@JsonProperty("account_record_lastrefresh_status")
-	private String accountRecordStatus;
-
-	/** The account record lastrefresh start timestamp. */
-	@JsonProperty("account_record_lastrefresh_start_timestamp")
-	private Long accountRecordLastrefreshStartTimestamp;
-
-	/** The account record lastrefresh end timestamp. */
-	@JsonProperty("account_record_lastrefresh_end_timestamp")
-	private Long accountRecordLastrefreshEndTimestamp;
-
 	@JsonProperty("account_record_counts_last_refresh")
 	private AccountRecordCountsLastRefresh accountRecordCountsLastRefresh;
+
+	@JsonProperty("expected_totals")
+	private Map<String, Object> expectedTotals;
+
+	@JsonProperty("expected_totals")
+	private Map<String, Object> actualTotals;
 
 	/** The account tags. */
 	@JsonProperty("account_tags")
@@ -472,103 +458,6 @@ public class Brand {
 	}
 
 	/**
-	 * Gets the account record lastrefresh.
-	 *
-	 * @return the account record lastrefresh
-	 */
-	public Integer getAccountRecordLastrefresh() {
-		return accountRecordLastrefresh;
-	}
-
-	/**
-	 * Sets the account record lastrefresh.
-	 *
-	 * @param accountRecordLastrefresh
-	 *            the new account record lastrefresh
-	 */
-	public void setAccountRecordLastrefresh(Integer accountRecordLastrefresh) {
-		this.accountRecordLastrefresh = accountRecordLastrefresh;
-	}
-
-	/**
-	 * Gets the account record total.
-	 *
-	 * @return the account record total
-	 */
-	public Integer getAccountRecordTotal() {
-		return accountRecordTotal;
-	}
-
-	/**
-	 * Sets the account record total.
-	 *
-	 * @param accountRecordTotal
-	 *            the new account record total
-	 */
-	public void setAccountRecordTotal(Integer accountRecordTotal) {
-		this.accountRecordTotal = accountRecordTotal;
-	}
-
-	/**
-	 * Gets the account record status.
-	 *
-	 * @return the account record status
-	 */
-	public String getAccountRecordStatus() {
-		return accountRecordStatus;
-	}
-
-	/**
-	 * Sets the account record status.
-	 *
-	 * @param accountRecordStatus
-	 *            the new account record status
-	 */
-	public void setAccountRecordStatus(String accountRecordStatus) {
-		this.accountRecordStatus = accountRecordStatus;
-	}
-
-	/**
-	 * Gets the account record lastrefresh start timestamp.
-	 *
-	 * @return the account record lastrefresh start timestamp
-	 */
-	public Long getAccountRecordLastrefreshStartTimestamp() {
-		return accountRecordLastrefreshStartTimestamp;
-	}
-
-	/**
-	 * Sets the account record lastrefresh start timestamp.
-	 *
-	 * @param accountRecordLastrefreshStartTimestamp
-	 *            the new account record lastrefresh start timestamp
-	 */
-	public void setAccountRecordLastrefreshStartTimestamp(
-			Long accountRecordLastrefreshStartTimestamp) {
-		this.accountRecordLastrefreshStartTimestamp = accountRecordLastrefreshStartTimestamp;
-	}
-
-	/**
-	 * Gets the account record lastrefresh end timestamp.
-	 *
-	 * @return the account record lastrefresh end timestamp
-	 */
-	public Long getAccountRecordLastrefreshEndTimestamp() {
-		return accountRecordLastrefreshEndTimestamp;
-	}
-
-	/**
-	 * Sets the account record lastrefresh end timestamp.
-	 *
-	 * @param accountRecordLastrefreshEndTimestamp
-	 *            the new account record lastrefresh end timestamp
-	 */
-	public void setAccountRecordLastrefreshEndTimestamp(
-			Long accountRecordLastrefreshEndTimestamp) {
-		this.accountRecordLastrefreshEndTimestamp = accountRecordLastrefreshEndTimestamp;
-	}
-
-	/**
 	 * @return the accountRecordCountsLastRefresh
 	 */
 	public AccountRecordCountsLastRefresh getAccountRecordCountsLastRefresh() {
@@ -582,6 +471,34 @@ public class Brand {
 	public void setAccountRecordCountsLastRefresh(
 			AccountRecordCountsLastRefresh accountRecordCountsLastRefresh) {
 		this.accountRecordCountsLastRefresh = accountRecordCountsLastRefresh;
+	}
+
+	/**
+	 * @return the expectedTotals
+	 */
+	public Map<String, Object> getExpectedTotals() {
+		return expectedTotals;
+	}
+
+	/**
+	 * @param expectedTotals the expectedTotals to set
+	 */
+	public void setExpectedTotals(Map<String, Object> expectedTotals) {
+		this.expectedTotals = expectedTotals;
+	}
+
+	/**
+	 * @return the actualTotals
+	 */
+	public Map<String, Object> getActualTotals() {
+		return actualTotals;
+	}
+
+	/**
+	 * @param actualTotals the actualTotals to set
+	 */
+	public void setActualTotals(Map<String, Object> actualTotals) {
+		this.actualTotals = actualTotals;
 	}
 
 	/**
@@ -600,10 +517,6 @@ public class Brand {
 		/** The account id. */
 		@JsonProperty("account_id")
 		private String accountId;
-
-		/** The account record lastrefresh. */
-		@JsonProperty("account_record_lastrefresh")
-		private Integer accountRecordLastrefresh;
 
 		/** The account record status. */
 		@JsonProperty("account_record_lastrefresh_status")
@@ -642,25 +555,6 @@ public class Brand {
 		 */
 		public void setAccountId(String accountId) {
 			this.accountId = accountId;
-		}
-
-		/**
-		 * Gets the account record lastrefresh.
-		 *
-		 * @return the account record lastrefresh
-		 */
-		public Integer getAccountRecordLastrefresh() {
-			return this.accountRecordLastrefresh;
-		}
-
-		/**
-		 * Sets the account record lastrefresh.
-		 *
-		 * @param accountRecordLastrefresh
-		 *            the new account record lastrefresh
-		 */
-		public void setAccountRecordLastrefresh(Integer accountRecordLastrefresh) {
-			this.accountRecordLastrefresh = accountRecordLastrefresh;
 		}
 
 		/**
@@ -827,6 +721,12 @@ public class Brand {
 		@JsonProperty("account_record_counts_last_refresh")
 		private AccountRecordCountsLastRefresh accountRecordCountsLastRefresh;
 
+		@JsonProperty("expected_totals")
+		private Map<String, Object> expectedTotals;
+
+		@JsonProperty("expected_totals")
+		private Map<String, Object> actualTotals;
+
 		/**
 		 * Gets the updated at.
 		 *
@@ -937,6 +837,34 @@ public class Brand {
 				AccountRecordCountsLastRefresh accountRecordCountsLastRefresh) {
 			this.accountRecordCountsLastRefresh = accountRecordCountsLastRefresh;
 		}
+
+		/**
+		 * @return the expectedTotals
+		 */
+		public Map<String, Object> getExpectedTotals() {
+			return expectedTotals;
+		}
+
+		/**
+		 * @param expectedTotals the expectedTotals to set
+		 */
+		public void setExpectedTotals(Map<String, Object> expectedTotals) {
+			this.expectedTotals = expectedTotals;
+		}
+
+		/**
+		 * @return the actualTotals
+		 */
+		public Map<String, Object> getActualTotals() {
+			return actualTotals;
+		}
+
+		/**
+		 * @param actualTotals the actualTotals to set
+		 */
+		public void setActualTotals(Map<String, Object> actualTotals) {
+			this.actualTotals = actualTotals;
+		}
 	}
 
 	public static BrandIngestRunUpdateView createBrandIngestRunUpdateView(
@@ -954,8 +882,7 @@ public class Brand {
 	}
 
 	public static void updateBrandIngestRunUpdateViewWithTimestamp(
-			BrandIngestRunUpdateView brandIngestRunUpdateView,
-			int numberOfRowsCreated, GoogleCredential credential) {
+			BrandIngestRunUpdateView brandIngestRunUpdateView, GoogleCredential credential) {
 
 		brandIngestRunUpdateView
 				.setAccountRecordLastrefreshEndTimestamp(Instant.now()
@@ -964,8 +891,6 @@ public class Brand {
 				.toEpochMilli()));
 		brandIngestRunUpdateView.setTimestamp(String.valueOf(Instant.now()
 				.toEpochMilli()));
-		brandIngestRunUpdateView
-				.setAccountRecordLastrefresh(numberOfRowsCreated);
 
 		brandIngestRunUpdateView.setAccountRecordStatus(STATUS_SUCCESS);
 		// update oauth token
@@ -1004,7 +929,7 @@ public class Brand {
 
 	public static void updateBrandCountsRunUpdateViewWithTimestamp(
 			BrandCountsRunUpdateView brandCountsRunUpdateView,
-			List<Map<String,Object>> numberOfRowsCreated,
+			Map<String, Map<String, Object>> numberOfRowsCreated,
 			GoogleCredential credential, String startDate, String endDate) {
 		AccountRecordCountsLastRefresh accountRecordCountsLastRefresh = brandCountsRunUpdateView
 				.getAccountRecordCountsLastRefresh();
@@ -1036,8 +961,6 @@ public class Brand {
 			accountRecordCountsLastRefresh
 					.setAccountRecordCountsLastrefreshEndDate(endDate);
 		}
-		accountRecordCountsLastRefresh
-				.setAccountRecordCountsLastrefreshTotals(numberOfRowsCreated);
 
 		accountRecordCountsLastRefresh
 				.setAccountRecordCountsLastrefreshStatus(Brand.STATUS_SUCCESS);
@@ -1056,5 +979,7 @@ public class Brand {
 			brandCountsRunUpdateView.setAccountRefreshOauthtoken(credential
 					.getRefreshToken());
 		}
+		brandCountsRunUpdateView.setExpectedTotals(numberOfRowsCreated.get("expected_totals"));
+		brandCountsRunUpdateView.setActualTotals(numberOfRowsCreated.get("actual_totals"));
 	}
 }

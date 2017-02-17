@@ -28,6 +28,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -36,6 +38,8 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -51,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.sqs.model.Message;
+import com.carrotsearch.hppc.cursors.ObjectObjectCursor;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
@@ -118,8 +123,9 @@ public class GoogleAnalyticsResource extends MessageHandler {
 
 	private static String VIEW_ID = "view_id";
 	private static String VIEW_NATIVE_ID = "view_native_id";
-	private static String EXPECTED_TOTAL_COUNT = "expected_total";
-	private static String ACTUAL_TOTAL_COUNT = "actual_total";
+	private static String CONSOLIDATED_TOTAL = "consolidate_total";
+	private static String ACTUAL_TOTALS = "actual_totals";
+	private static String EXPECTED_TOTALS = "expected_totals";
 	private static String REPORTS_ROWS_COUNT = "report_rows_count";
 	private static String REPORTS_ROWS_DATA = "report_rows_data";
 	private static Integer REPORT_REQUEST_PAGE_SIZE = 10000;
@@ -358,20 +364,12 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				APPLICATION_NAME).build();
 
 		// get data and persist
-		List<Map<String, Object>> numberOfRowsCreated = getAndPersistReports(
+		Map<String, Map<String, Object>> numberOfRowsCreated = getAndPersistReports(
 				analyticsReportingService, brand, startDate, endDate,
 				forceStartDate, false);
 
-		int totalRows = 0;
-		for (Map<String, Object> viewCounts : numberOfRowsCreated) {
-			for (Entry<String, Object> viewCount : viewCounts.entrySet()) {
-				if (viewCount.getKey().equalsIgnoreCase(EXPECTED_TOTAL_COUNT)) {
-					totalRows += (int) viewCount.getValue();
-				}
-			}
-		}
 		Brand.updateBrandIngestRunUpdateViewWithTimestamp(
-				brandIngestRunUpdateView, totalRows, credential);
+				brandIngestRunUpdateView, credential);
 
 		// update Brand record in ES
 		try {
@@ -408,7 +406,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				APPLICATION_NAME).build();
 
 		// get data and persist
-		List<Map<String, Object>> numberOfRowsCreated = getAndPersistReports(
+		Map<String, Map<String, Object>> numberOfRowsCreated = getAndPersistReports(
 				analyticsReportingService, brand, startDate, endDate,
 				forceStartDate, true);
 
@@ -455,15 +453,16 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	 * @throws IOException
 	 *             Signals that an I/O exception has occurred.
 	 */
-	private List<Map<String, Object>> getAndPersistReports(
+	private Map<String, Map<String, Object>> getAndPersistReports(
 			AnalyticsReporting analyticsReportingService, Brand brand,
 			String startDate, String endDate, Boolean forceStartDate,
 			Boolean justCounts) throws IOException {
 		int numberOfRowsCreated = 0, numberOfRowsExpectedForView = 0;
 		List<JsonObject> results = new ArrayList<>();
 		List<Map<String, Object>> tempResults = null;
-		List<Map<String, Object>> counts = new ArrayList<>();
-		Map<String, Object> viewSpecificCounts = null;
+		Map<String, Map<String, Object>> counts = new HashMap<>();
+		Map<String, Object> viewSpecificExpectedCounts = null;
+		Map<String, Object> viewSpecificActualCounts = null;
 		DateRange dateRange = null;
 
 		View viewToIngest = null;
@@ -494,9 +493,9 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		if(viewToIngest==null) {
 			return counts;
 		}
-		viewSpecificCounts = new HashMap<>();
-		viewSpecificCounts.put(VIEW_ID, viewToIngest.getViewId());
-		viewSpecificCounts.put(VIEW_NATIVE_ID, viewToIngest.getViewNativeId());
+		viewSpecificExpectedCounts = new HashMap<>();
+		viewSpecificExpectedCounts.put(VIEW_ID, viewToIngest.getViewId());
+		viewSpecificExpectedCounts.put(VIEW_NATIVE_ID, viewToIngest.getViewNativeId());
 		numberOfRowsExpectedForView = 0;
 
 		// for the viewToIngest, get all reports configured
@@ -571,7 +570,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 						.get(0).get(REPORTS_ROWS_DATA)
 						: new ArrayList<JsonObject>();
 				if (justCounts) {
-					viewSpecificCounts.put(
+					viewSpecificExpectedCounts.put(
 							StringUtil.camelCaseToUnderscore(report.getName())
 									+ "_total", rowsCount);
 					numberOfRowsExpectedForView += rowsCount;
@@ -638,9 +637,10 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				}
 			}
 		}
-		viewSpecificCounts.put(EXPECTED_TOTAL_COUNT, numberOfRowsExpectedForView);
-		viewSpecificCounts.put(ACTUAL_TOTAL_COUNT, getActualCountOfViewData(brand.getAccountId(), viewToIngest.getViewId()));
-		counts.add(viewSpecificCounts);
+		viewSpecificExpectedCounts.put(CONSOLIDATED_TOTAL, numberOfRowsExpectedForView);
+		viewSpecificActualCounts = getActualCountOfViewData(brand.getAccountId(), viewToIngest.getViewId());
+		counts.put(EXPECTED_TOTALS, viewSpecificExpectedCounts);
+		counts.put(ACTUAL_TOTALS, viewSpecificActualCounts);
 
 		return counts;
 	}
@@ -1002,17 +1002,40 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		return response;
 	}
 
-	private Long getActualCountOfViewData(String accountId, String viewId) {
-
+	private Map<String, Object> getActualCountOfViewData(String accountId, String viewId) {
+		Map<String, Object> viewSpecificActualCounts = new HashMap<>();
 		QueryBuilder qb = boolQuery()
 				.must(matchQuery("accountId.raw", accountId))
 				.must(matchQuery("viewId.raw", viewId));
 		SearchResponse searchResponse = this.esClient
 				.prepareSearch("analytics")
 				.setQuery(qb).setSize(0).get();
-		long count = searchResponse.getHits()
+		long totalCount = searchResponse.getHits()
 				.getTotalHits();
-		return count;
+		viewSpecificActualCounts.put(CONSOLIDATED_TOTAL, totalCount);
+		
+		// get all types
+		GetMappingsResponse getMappingsResponsees;
+		try {
+			getMappingsResponsees = this.esClient.admin().indices().getMappings(new GetMappingsRequest().indices("analytics")).get();
+		
+			ImmutableOpenMap<String, MappingMetaData> mapping = getMappingsResponsees.mappings().get("analytics");
+	        for (ObjectObjectCursor<String, MappingMetaData> meta : mapping) {
+	        	long typeCount=0l;
+	        	searchResponse = this.esClient
+	    				.prepareSearch("analytics")
+	    				.setTypes(meta.key)
+	    				.setQuery(qb).setSize(0).get();
+	        	typeCount = searchResponse.getHits()
+	    				.getTotalHits();
+	        	
+	    		viewSpecificActualCounts.put(StringUtil.camelCaseToUnderscore(meta.key).replace("Stats", "report_total"), typeCount);
+	        }
+		} catch (InterruptedException | ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return viewSpecificActualCounts;
 	}
 	
 	private GoogleCredential buildCredentials(Brand brand) {
