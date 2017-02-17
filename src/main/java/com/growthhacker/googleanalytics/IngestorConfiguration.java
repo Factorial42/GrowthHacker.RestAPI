@@ -9,6 +9,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class IngestorConfiguration {
 
+	@JsonProperty("analyticsIndexAlias")
+	@NotEmpty
+	public String analyticsIndexAlias;
+	
 	@JsonProperty("exponentianBackoffAttemptsOnRetriableErrors")
 	@NotEmpty
 	public Integer exponentianBackoffAttemptsOnRetriableErrors;
@@ -36,6 +40,20 @@ public class IngestorConfiguration {
 	@JsonProperty("reports")
 	@NotEmpty
 	private List<Report> reports = Collections.emptyList();
+
+	/**
+	 * @return the analyticsIndexAlias
+	 */
+	public String getAnalyticsIndexAlias() {
+		return analyticsIndexAlias;
+	}
+
+	/**
+	 * @param analyticsIndexAlias the analyticsIndexAlias to set
+	 */
+	public void setAnalyticsIndexAlias(String analyticsIndexAlias) {
+		this.analyticsIndexAlias = analyticsIndexAlias;
+	}
 
 	/**
 	 * @return the exponentianBackoffAttemptsOnRetriableErrors

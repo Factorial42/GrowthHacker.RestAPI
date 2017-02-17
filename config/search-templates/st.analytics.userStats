@@ -34,7 +34,7 @@
                         }
                     },
                     \"user_sessionsPerUser\": {
-                        \"sum\": {
+                        \"avg\": {
                             \"field\": \"user_sessionsPerUser\"
                         }
                     },
@@ -55,7 +55,7 @@
                         }
                     },
                     \"user_percentNewSessions\": {
-                        \"sum\": {
+                        \"avg\": {
                             \"script\": {
                                 \"inline\": \"Float.parseFloat(doc['user_percentNewSessions'].value)\",
                                 \"lang\": \"painless\"

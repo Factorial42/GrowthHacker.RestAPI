@@ -1002,35 +1002,46 @@ public class GoogleAnalyticsResource extends MessageHandler {
 		return response;
 	}
 
-	private Map<String, Object> getActualCountOfViewData(String accountId, String viewId) {
+	private Map<String, Object> getActualCountOfViewData(String accountId,
+			String viewId) {
 		Map<String, Object> viewSpecificActualCounts = new HashMap<>();
-		QueryBuilder qb = boolQuery()
-				.must(matchQuery("accountId.raw", accountId))
-				.must(matchQuery("viewId.raw", viewId));
+		QueryBuilder qb = boolQuery().must(
+				matchQuery("accountId.raw", accountId)).must(
+				matchQuery("viewId.raw", viewId));
 		SearchResponse searchResponse = this.esClient
-				.prepareSearch("analytics")
+				.prepareSearch(
+						this.ingestorConfiguration.getAnalyticsIndexAlias())
 				.setQuery(qb).setSize(0).get();
-		long totalCount = searchResponse.getHits()
-				.getTotalHits();
+		long totalCount = searchResponse.getHits().getTotalHits();
 		viewSpecificActualCounts.put(CONSOLIDATED_TOTAL, totalCount);
-		
+
 		// get all types
 		GetMappingsResponse getMappingsResponsees;
 		try {
-			getMappingsResponsees = this.esClient.admin().indices().getMappings(new GetMappingsRequest().indices("analytics")).get();
-		
-			ImmutableOpenMap<String, MappingMetaData> mapping = getMappingsResponsees.mappings().get("analytics");
-	        for (ObjectObjectCursor<String, MappingMetaData> meta : mapping) {
-	        	long typeCount=0l;
-	        	searchResponse = this.esClient
-	    				.prepareSearch("analytics")
-	    				.setTypes(meta.key)
-	    				.setQuery(qb).setSize(0).get();
-	        	typeCount = searchResponse.getHits()
-	    				.getTotalHits();
-	        	
-	    		viewSpecificActualCounts.put(StringUtil.camelCaseToUnderscore(meta.key).replace("Stats", "report_total"), typeCount);
-	        }
+			getMappingsResponsees = this.esClient
+					.admin()
+					.indices()
+					.getMappings(
+							new GetMappingsRequest()
+									.indices(this.ingestorConfiguration
+											.getAnalyticsIndexAlias())).get();
+
+			ImmutableOpenMap<String, MappingMetaData> mapping = getMappingsResponsees
+					.mappings()
+					.get(this.ingestorConfiguration.getAnalyticsIndexAlias());
+			for (ObjectObjectCursor<String, MappingMetaData> meta : mapping) {
+				long typeCount = 0l;
+				searchResponse = this.esClient
+						.prepareSearch(
+								this.ingestorConfiguration
+										.getAnalyticsIndexAlias())
+						.setTypes(meta.key).setQuery(qb).setSize(0).get();
+				typeCount = searchResponse.getHits().getTotalHits();
+
+				viewSpecificActualCounts.put(
+						StringUtil.camelCaseToUnderscore(meta.key).replace(
+								"Stats", "report_total"), typeCount);
+			}
 		} catch (InterruptedException | ExecutionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
