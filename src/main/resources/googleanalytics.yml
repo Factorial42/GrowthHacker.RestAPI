@@ -33,6 +33,7 @@ sqsFactory:
 sqsListenQueueUrl: https://sqs.us-west-2.amazonaws.com/837567902566/GH-GAIngestQueue_LOCAL
   
 ingestorConfiguration:
+  analyticsIndexAlias: analytics
   exponentianBackoffAttemptsOnRetriableErrors: 5
   historicStartDate: 2005-01-01
   historicEndDate: today
