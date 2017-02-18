@@ -9,6 +9,7 @@ import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -21,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -50,6 +52,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
+import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +89,7 @@ import com.growthhacker.googleanalytics.Report;
 import com.growthhacker.googleanalytics.model.Brand;
 import com.growthhacker.googleanalytics.model.Brand.BrandCountsRunUpdateView;
 import com.growthhacker.googleanalytics.model.Brand.BrandIngestRunUpdateView;
+import com.growthhacker.googleanalytics.model.DailyStatsResponse;
 import com.growthhacker.googleanalytics.model.IngestRequestMessage;
 import com.growthhacker.googleanalytics.model.View;
 import com.growthhacker.googleanalytics.util.StringUtil;
@@ -123,6 +127,8 @@ public class GoogleAnalyticsResource extends MessageHandler {
 
 	private static String VIEW_ID = "view_id";
 	private static String VIEW_NATIVE_ID = "view_native_id";
+	private static String ACCOUNT_NAME_FIELD = "account_name";
+	private static String ACCOUNT_ID_FIELD_IN_ANALYTICS = "accountId.raw";
 	private static String CONSOLIDATED_TOTAL = "consolidated_total";
 	private static String ACTUAL_TOTALS = "actual_totals";
 	private static String EXPECTED_TOTALS = "expected_totals";
@@ -341,6 +347,76 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				.entity(brandCountsRunUpdateView).build();
 	}
 
+
+	@GET
+	@Timed
+	@Path("/countsPastHours")
+	public Response getRecentCounts(@QueryParam("accountTethererEmail") String accountTethererEmail, @QueryParam("hours") Float hours) {
+
+		if (hours == null){
+			hours = 24f;
+		}
+		DailyStatsResponse dailyStatsResponse = null;
+
+		try {
+			dailyStatsResponse = handleRecentCountRequest(accountTethererEmail, hours);
+		} catch (IOException e) {
+			logger.error("Error in getting recent counts:", e);
+			return Response
+					.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity("Error in getting recent counts:"
+							+ e.getMessage()).build();
+		}
+		return Response.status(Response.Status.OK)
+				.entity(dailyStatsResponse).build();
+	}
+
+	private DailyStatsResponse handleRecentCountRequest(String accountTethererEmail, Float hours)
+			throws IOException {
+		DailyStatsResponse dailyStatsResponse = new DailyStatsResponse();
+		Map<String, String> newBrands = new HashMap<>();
+		// get new brands in past hours
+
+		QueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("account_tetherer_email", accountTethererEmail);
+		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+		boolQueryBuilder.must().add(matchQueryBuilder);
+		boolQueryBuilder.must().add(
+				QueryBuilders.rangeQuery("recent").gte("now-" + hours + "h"));
+		SearchResponse response = esClient.prepareSearch(BRAND_INDEX)
+				.setTypes(BRAND_TYPE).setSize(0).setQuery(boolQueryBuilder)
+				.get();
+		Long recentBrands = response != null ? response.getHits().totalHits() : 0l;
+		response = esClient
+				.prepareSearch(BRAND_INDEX)
+				.setTypes(BRAND_TYPE)
+				.setSize(recentBrands.intValue())
+				.setQuery(boolQueryBuilder).get();
+		for(SearchHit hit:response.getHits().hits()) {
+			newBrands.put(hit.getId(), hit.field(ACCOUNT_NAME_FIELD).getValue().toString());
+		}
+		dailyStatsResponse.setNewBrands(newBrands);
+		// get brands count
+		response = esClient
+				.prepareSearch(BRAND_INDEX)
+				.setTypes(BRAND_TYPE)
+				.setSize(0)
+				.setQuery(matchQueryBuilder).get();
+		Long totalBrands = response != null ? response.getHits().totalHits() : 0l;
+		response = esClient
+				.prepareSearch(ingestorConfiguration.analyticsIndexAlias)
+				.setSize(0)
+				.setQuery(boolQueryBuilder)
+				.addAggregation(
+						AggregationBuilders.cardinality("data").field(ACCOUNT_ID_FIELD_IN_ANALYTICS)).get();
+		Long totalBrandsDatUpdatedCount = response != null ? response.getHits().totalHits() : 0l;
+		Cardinality cardinality = response.getAggregations() != null ? response
+				.getAggregations().get("data") : null;
+		dailyStatsResponse.setBrandsUpdatedCount(cardinality.getValue());
+		dailyStatsResponse.setBrandsUpdatedDataCount(totalBrandsDatUpdatedCount);
+
+		return dailyStatsResponse;
+	}
+	
 	/**
 	 * Handle ingest request.
 	 *
@@ -704,6 +780,8 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			prefixedObject.addProperty("accountId", accountId);
 			prefixedObject.addProperty("viewId", viewId);
 			prefixedObject.addProperty("viewNativeId", viewNativeId);
+			prefixedObject.addProperty("timestamp", Instant.now()
+					.toEpochMilli());
 			// add timestamp2015042212
 			DateFormat readFormat = new SimpleDateFormat("yyyyMMddhh");
 			try {

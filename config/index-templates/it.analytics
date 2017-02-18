@@ -11,6 +11,10 @@
           "type": "date",
           "format": "epoch_millis"
         },
+        "timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
@@ -100,6 +104,14 @@
     },
     "eventStats": {
       "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
@@ -201,6 +213,14 @@
     },
     "sessionStats": {
       "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
@@ -275,6 +295,14 @@
     },
     "ecommerceProductStats": {
       "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
@@ -358,6 +386,14 @@
     },
     "geoStats": {
       "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
@@ -449,6 +485,14 @@
     },
     "platformStats": {
       "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
@@ -550,6 +594,14 @@
     },
     "trafficSourceStats": {
       "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
@@ -696,6 +748,14 @@
     },
     "ecommerceTransactionStats": {
       "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
         "accountId": {
           "type": "string",
           "fields": {
