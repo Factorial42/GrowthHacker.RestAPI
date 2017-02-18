@@ -1044,9 +1044,11 @@ public class GoogleAnalyticsResource extends MessageHandler {
 									.indices(this.ingestorConfiguration
 											.getAnalyticsIndexAlias())).get();
 
+
+			String indexName = (String) getMappingsResponsees.mappings().keys()
+					.toArray()[0];
 			ImmutableOpenMap<String, MappingMetaData> mapping = getMappingsResponsees
-					.mappings()
-					.get(this.ingestorConfiguration.getAnalyticsIndexAlias());
+					.mappings().get(indexName);
 			for (ObjectObjectCursor<String, MappingMetaData> meta : mapping) {
 				long typeCount = 0l;
 				searchResponse = this.esClient
