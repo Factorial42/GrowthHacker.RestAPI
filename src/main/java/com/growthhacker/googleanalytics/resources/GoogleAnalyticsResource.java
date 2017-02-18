@@ -127,6 +127,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 
 	private static String VIEW_ID = "view_id";
 	private static String VIEW_NATIVE_ID = "view_native_id";
+	private static String ACCOUNT_CREATED_AT_FIELD = "createdAt";
 	private static String ACCOUNT_NAME_FIELD = "account_name";
 	private static String ACCOUNT_ID_FIELD_IN_ANALYTICS = "accountId.raw";
 	private static String CONSOLIDATED_TOTAL = "consolidated_total";
@@ -351,15 +352,15 @@ public class GoogleAnalyticsResource extends MessageHandler {
 	@GET
 	@Timed
 	@Path("/countsPastHours")
-	public Response getRecentCounts(@QueryParam("accountTethererEmail") String accountTethererEmail, @QueryParam("hours") Float hours) {
+	public Response getRecentCounts(@QueryParam("hours") String hours) {
 
-		if (hours == null){
-			hours = 24f;
+		if (StringUtil.isBlank(hours)){
+			hours = "24";
 		}
 		DailyStatsResponse dailyStatsResponse = null;
 
 		try {
-			dailyStatsResponse = handleRecentCountRequest(accountTethererEmail, hours);
+			dailyStatsResponse = handleRecentCountRequest(hours);
 		} catch (IOException e) {
 			logger.error("Error in getting recent counts:", e);
 			return Response
@@ -371,17 +372,15 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				.entity(dailyStatsResponse).build();
 	}
 
-	private DailyStatsResponse handleRecentCountRequest(String accountTethererEmail, Float hours)
+	private DailyStatsResponse handleRecentCountRequest(String hours)
 			throws IOException {
 		DailyStatsResponse dailyStatsResponse = new DailyStatsResponse();
 		Map<String, String> newBrands = new HashMap<>();
 		// get new brands in past hours
 
-		QueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("account_tetherer_email", accountTethererEmail);
 		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-		boolQueryBuilder.must().add(matchQueryBuilder);
 		boolQueryBuilder.must().add(
-				QueryBuilders.rangeQuery("recent").gte("now-" + hours + "h"));
+				QueryBuilders.rangeQuery(ACCOUNT_CREATED_AT_FIELD).gte("now-" + hours + "h"));
 		SearchResponse response = esClient.prepareSearch(BRAND_INDEX)
 				.setTypes(BRAND_TYPE).setSize(0).setQuery(boolQueryBuilder)
 				.get();
@@ -395,22 +394,18 @@ public class GoogleAnalyticsResource extends MessageHandler {
 			newBrands.put(hit.getId(), hit.field(ACCOUNT_NAME_FIELD).getValue().toString());
 		}
 		dailyStatsResponse.setNewBrands(newBrands);
-		// get brands count
-		response = esClient
-				.prepareSearch(BRAND_INDEX)
-				.setTypes(BRAND_TYPE)
-				.setSize(0)
-				.setQuery(matchQueryBuilder).get();
-		Long totalBrands = response != null ? response.getHits().totalHits() : 0l;
+		boolQueryBuilder = QueryBuilders.boolQuery();
+		boolQueryBuilder.must().add(
+				QueryBuilders.rangeQuery("timestamp").gte("now-" + hours + "h"));
 		response = esClient
 				.prepareSearch(ingestorConfiguration.analyticsIndexAlias)
 				.setSize(0)
 				.setQuery(boolQueryBuilder)
 				.addAggregation(
-						AggregationBuilders.cardinality("data").field(ACCOUNT_ID_FIELD_IN_ANALYTICS)).get();
+						AggregationBuilders.cardinality("accounts").field(ACCOUNT_ID_FIELD_IN_ANALYTICS)).get();
 		Long totalBrandsDatUpdatedCount = response != null ? response.getHits().totalHits() : 0l;
 		Cardinality cardinality = response.getAggregations() != null ? response
-				.getAggregations().get("data") : null;
+				.getAggregations().get("accounts") : null;
 		dailyStatsResponse.setBrandsUpdatedCount(cardinality.getValue());
 		dailyStatsResponse.setBrandsUpdatedDataCount(totalBrandsDatUpdatedCount);
 
