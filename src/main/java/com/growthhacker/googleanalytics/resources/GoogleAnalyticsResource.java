@@ -391,7 +391,9 @@ public class GoogleAnalyticsResource extends MessageHandler {
 				.setSize(recentBrands.intValue())
 				.setQuery(boolQueryBuilder).get();
 		for(SearchHit hit:response.getHits().hits()) {
-			newBrands.put(hit.getId(), hit.field(ACCOUNT_NAME_FIELD).getValue().toString());
+			Brand brand = mapper
+					.readValue(hit.getSourceAsString(), Brand.class);
+			newBrands.put(hit.getId(), brand.getAccountName());
 		}
 		dailyStatsResponse.setNewBrands(newBrands);
 		boolQueryBuilder = QueryBuilders.boolQuery();
