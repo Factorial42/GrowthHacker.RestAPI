@@ -123,7 +123,7 @@ public class GoogleAnalyticsResource extends MessageHandler {
 
 	private static String VIEW_ID = "view_id";
 	private static String VIEW_NATIVE_ID = "view_native_id";
-	private static String CONSOLIDATED_TOTAL = "consolidate_total";
+	private static String CONSOLIDATED_TOTAL = "consolidated_total";
 	private static String ACTUAL_TOTALS = "actual_totals";
 	private static String EXPECTED_TOTALS = "expected_totals";
 	private static String REPORTS_ROWS_COUNT = "report_rows_count";
