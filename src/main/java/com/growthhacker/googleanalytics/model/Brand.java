@@ -107,7 +107,7 @@ public class Brand {
 	@JsonProperty("expected_totals")
 	private Map<String, Object> expectedTotals;
 
-	@JsonProperty("expected_totals")
+	@JsonProperty("actual_totals")
 	private Map<String, Object> actualTotals;
 
 	/** The account tags. */
@@ -758,7 +758,7 @@ public class Brand {
 		@JsonProperty("expected_totals")
 		private Map<String, Object> expectedTotals;
 
-		@JsonProperty("expected_totals")
+		@JsonProperty("actual_totals")
 		private Map<String, Object> actualTotals;
 
 		/**
