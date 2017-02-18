@@ -77,6 +77,24 @@
         },
         "user_sessionsPerUser": {
           "type": "float"
+        },
+        "user_newUsers": {
+          "type": "float"
+        },
+        "user_percentNewSessions": {
+          "type": "float"
+        },
+        "user_sessions": {
+          "type": "float"
+        },
+        "user_transactionRevenue": {
+          "type": "float"
+        },
+        "user_transactions": {
+          "type": "float"
+        },
+        "user_users": {
+          "type": "float"
         }
       }
     },
@@ -166,6 +184,18 @@
         },
         "event_uniqueEvents": {
           "type": "float"
+        },
+        "event_sessions": {
+          "type": "float"
+        },
+        "event_transactionRevenue": {
+          "type": "float"
+        },
+        "event_transactions": {
+          "type": "float"
+        },
+        "event_users": {
+          "type": "float"
         }
       }
     },
@@ -230,6 +260,15 @@
           "type": "float"
         },
         "session_sessions": {
+          "type": "float"
+        },
+        "session_transactionRevenue": {
+          "type": "float"
+        },
+        "session_transactions": {
+          "type": "float"
+        },
+        "session_users": {
           "type": "float"
         }
       }
@@ -396,6 +435,15 @@
         },
         "geo_sessions": {
           "type": "float"
+        },
+        "geo_transactionRevenue": {
+          "type": "float"
+        },
+        "geo_transactions": {
+          "type": "float"
+        },
+        "geo_users": {
+          "type": "float"
         }
       }
     },
@@ -487,6 +535,15 @@
           }
         },
         "platform_sessions": {
+          "type": "float"
+        },
+        "platform_transactionRevenue": {
+          "type": "float"
+        },
+        "platform_transactions": {
+          "type": "float"
+        },
+        "platform_users": {
           "type": "float"
         }
       }
@@ -630,6 +687,9 @@
           "type": "float"
         },
         "trafficSource_transactions": {
+          "type": "float"
+        },
+        "trafficSource_users": {
           "type": "float"
         }
       }
