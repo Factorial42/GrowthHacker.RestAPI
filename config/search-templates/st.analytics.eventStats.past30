@@ -5,7 +5,11 @@
             \"bool\": {
                 \"must\": [
                     {
-                        \"match_all\": {}
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
                     }
                 ]
             }
@@ -24,29 +28,34 @@
                     \"size\": 1000
                 },
                 \"aggs\": {
-                    \"user_sessionCount\": {
+                    \"event_totalEvents\": {
                         \"sum\": {
-                            \"field\": \"user_sessionCount\"
+                            \"field\": \"event_totalEvents\"
                         }
                     },
-                    \"user_sessionsPerUser\": {
+                    \"event_uniqueEvents\": {
+                        \"sum\": {
+                            \"field\": \"event_uniqueEvents\"
+                        }
+                    },
+                    \"event_eventValue\": {
+                        \"sum\": {
+                            \"field\": \"event_eventValue\"
+                        }
+                    },
+                    \"event_avgEventValue\": {
                         \"avg\": {
-                            \"field\": \"user_sessionsPerUser\"
+                            \"field\": \"event_avgEventValue\"
                         }
                     },
-                    \"user_users\": {
+                    \"event_sessionsWithEvent\": {
                         \"sum\": {
-                            \"field\": \"user_users\"
+                            \"field\": \"event_sessionsWithEvent\"
                         }
                     },
-                    \"user_newUsers\": {
+                    \"event_eventsPerSessionWithEvent\": {
                         \"sum\": {
-                            \"field\": \"user_newUsers\"
-                        }
-                    },
-                    \"user_percentNewSessions\": {
-                        \"avg\": {
-                            \"field\": \"user_percentNewSessions\"
+                            \"field\": \"event_eventsPerSessionWithEvent\"
                         }
                     }
                 }

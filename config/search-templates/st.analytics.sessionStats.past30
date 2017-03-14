@@ -5,7 +5,11 @@
             \"bool\": {
                 \"must\": [
                     {
-                        \"match_all\": {}
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
                     }
                 ]
             }
@@ -24,29 +28,14 @@
                     \"size\": 1000
                 },
                 \"aggs\": {
-                    \"user_sessionCount\": {
+                    \"session_sessionDuration\": {
                         \"sum\": {
-                            \"field\": \"user_sessionCount\"
+                            \"field\": \"session_sessionDuration\"
                         }
                     },
-                    \"user_sessionsPerUser\": {
+                    \"session_avgSessionDuration\": {
                         \"avg\": {
-                            \"field\": \"user_sessionsPerUser\"
-                        }
-                    },
-                    \"user_users\": {
-                        \"sum\": {
-                            \"field\": \"user_users\"
-                        }
-                    },
-                    \"user_newUsers\": {
-                        \"sum\": {
-                            \"field\": \"user_newUsers\"
-                        }
-                    },
-                    \"user_percentNewSessions\": {
-                        \"avg\": {
-                            \"field\": \"user_percentNewSessions\"
+                            \"field\": \"session_avgSessionDuration\"
                         }
                     }
                 }

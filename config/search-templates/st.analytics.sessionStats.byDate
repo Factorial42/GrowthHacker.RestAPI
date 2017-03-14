@@ -1,0 +1,53 @@
+{
+    "template": "{
+        \"size\": 0,
+        \"query\": {
+            \"bool\": {
+                \"must\": [
+                    {
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        \"aggs\": {
+            \"by-date\": {
+                \"date_histogram\": {
+                    \"field\": \"dateHour\",
+                    \"interval\": \"day\"
+                },
+                \"aggs\": {
+                    \"brands\": {
+                        \"terms\": {
+                            \"field\": \"accountId.raw\",
+                            {{#accountIdsList}}
+                            \"include\":[
+                                \"{{#accountIds}}\",
+                                \"{{.}}\",
+                                \"{{/accountIds}}\"
+                            ],
+                            {{/accountIdsList}}
+                            \"size\": 1000
+                        },
+                        \"aggs\": {
+                            \"session_sessionDuration\": {
+                                \"sum\": {
+                                    \"field\": \"session_sessionDuration\"
+                                }
+                            },
+                            \"session_avgSessionDuration\": {
+                                \"avg\": {
+                                    \"field\": \"session_avgSessionDuration\"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }"
+}

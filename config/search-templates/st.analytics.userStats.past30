@@ -5,7 +5,11 @@
             \"bool\": {
                 \"must\": [
                     {
-                        \"match_all\": {}
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
                     }
                 ]
             }

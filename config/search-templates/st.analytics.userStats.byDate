@@ -1,0 +1,68 @@
+{
+    "template": "{
+        \"size\": 0,
+        \"query\": {
+            \"bool\": {
+                \"must\": [
+                    {
+                        \"range\": {
+                            \"dateHour\": {
+                                \"gte\": \"now-30d\"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        \"aggs\": {
+            \"by-date\": {
+                \"date_histogram\": {
+                    \"field\": \"dateHour\",
+                    \"interval\": \"day\"
+                },
+                \"aggs\": {
+                    \"brands\": {
+                        \"terms\": {
+                            \"field\": \"accountId.raw\",
+                            {{#accountIdsList}}
+                            \"include\":[
+                                \"{{#accountIds}}\",
+                                \"{{.}}\",
+                                \"{{/accountIds}}\"
+                            ],
+                            {{/accountIdsList}}
+                            \"size\": 1000
+                        },
+                        \"aggs\": {
+                            \"user_sessionCount\": {
+                                \"sum\": {
+                                    \"field\": \"user_sessionCount\"
+                                }
+                            },
+                            \"user_sessionsPerUser\": {
+                                \"avg\": {
+                                    \"field\": \"user_sessionsPerUser\"
+                                }
+                            },
+                            \"user_users\": {
+                                \"sum\": {
+                                    \"field\": \"user_users\"
+                                }
+                            },
+                            \"user_newUsers\": {
+                                \"sum\": {
+                                    \"field\": \"user_newUsers\"
+                                }
+                            },
+                            \"user_percentNewSessions\": {
+                                \"avg\": {
+                                    \"field\": \"user_percentNewSessions\"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }"
+}

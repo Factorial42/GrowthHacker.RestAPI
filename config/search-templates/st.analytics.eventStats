@@ -5,11 +5,7 @@
             \"bool\": {
                 \"must\": [
                     {
-                        \"range\": {
-                            \"dateHour\": {
-                                \"gte\": \"now-30d\"
-                            }
-                        }
+                        \"match_all\": {}
                     }
                 ]
             }
@@ -25,7 +21,7 @@
                         \"{{/accountIds}}\"
                     ],
                     {{/accountIdsList}}
-                    \"size\": 400
+                    \"size\": 1000
                 },
                 \"aggs\": {
                     \"event_totalEvents\": {
